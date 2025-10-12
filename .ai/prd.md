@@ -22,6 +22,7 @@ FR-002 Badge Catalog
   - deactivatedAt, 
   - status (enum values: `active`,`inactive`), 
   - availableLevels ( object((gold, description),(silver, description), (bronze, description))), where levels are: gold, silver, bronze
+- Each badge in catalog must have at least one level and at most 3 levels. Example: availableLevels:{"gold": {"description":"description for gold level"},"silver":{"description":"description for silver level"}} 
 - Admin capabilities: create, edit, deactivate catalog badges. Deactivated badges are read-only and not available for new applications.
 - Catalog search (MVP): filter by `category`, `level`, full-text title search, and `createdAt`. Only `active` badges returned.
 
@@ -32,7 +33,7 @@ FR-003 Badge Application (badge application = applicant applies for acceptance)
 - Admin can accept or reject an application. Admin records `approvedBy`/`approvedAt` or `rejectedBy`/`rejectedAt` and `rejectReason`.
 
 FR-004 Promotion Templates and Validation
-- Promotion templates (per path + level) stored in DB: `id`, `path` (technical/financial/management), `level` (e.g., S3), and a list of required badge counts by `category` and `level` (e.g., {technical:silver:6, any:gold:1, any:silver:4}).
+- Promotion templates (per path + level) stored in DB: `id`, `path` (technical/financial/management), `positionLevel` (e.g., S3), and a list of required badge counts by `category` and `level` (e.g., {technical:silver:6, any:gold:1, any:silver:4}). required badgee counts are defined at each position level (e.g. S3: {technical:silver:6, any:gold:1, any:silver:4})
 - Promotion submissions must target the immediate next level only (configured path-level sequence).
 - Validation: exact-match counts required. No level equivalence (e.g., gold does not count as silver).
 
@@ -58,6 +59,25 @@ FR-009 Data Models and IDs
 
 FR-010 Import and Migration
 - Import from legacy Excel/Confluence is out of scope for MVP (manual processes will be used).
+
+FR-011 Position levels and required badges
+- All position levels provided by configuration file and deployed with application
+- Positon levels from the configuration file are input parameter when user creates the Promotion Template
+- format: json
+- structure:{
+  "positions": {
+    "path": {
+      "positionLevel": {
+        "requiredBadges": {
+          "category": [
+            {"badgeLevel":3}
+            ]
+        }
+      }
+    }
+  }
+}
+Where positionLevel is many of ["J1","J2","M1","M2","S1","S2"], category is many of ["technical", "organizational","softskilled"], badgeLevel is many of ["gold", "silver", "bronze"]
 
 ## 4. Product Boundaries
 Out of scope for MVP:
@@ -103,7 +123,7 @@ US-004
 Title: Draft Badge Application
 Description: As an engineer, I want to draft a badge application and save it.
 Acceptance Criteria:
-- User can select a catalog badge and create a draft application with `dateOfApplication`, `dateOfFulfillment`, and `reason`.
+- User can select a catalog badge and specific badge level, and create a draft application with `dateOfApplication`, `dateOfFulfillment`, and `reason`.
 - Drafts are saved server-side and visible under My Badges.
 - Drafts can be edited or deleted by their owner.
 
