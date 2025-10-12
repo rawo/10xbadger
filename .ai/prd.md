@@ -12,7 +12,16 @@ FR-001 Authentication and Authorization
 - All endpoints must validate the authenticated user's domain claim and role for access control.
 
 FR-002 Badge Catalog
-- Catalog badge model: `id (UUID)`, `title`, `description`, `category` (technical, organizational, softskilled), `level` (gold, silver, bronze), `createdAt`, `createdBy`, `deactivatedAt`, `status` (`active`/`inactive`), `pathsAllowed` (optional; default `all`).
+- Catalog badge model: 
+  - id (UUID), 
+  - title 
+  - description, 
+  - category (technical, organizational, softskilled),
+  - createdAt 
+  - createdBy 
+  - deactivatedAt, 
+  - status (enum values: `active`,`inactive`), 
+  - availableLevels ( object((gold, description),(silver, description), (bronze, description))), where levels are: gold, silver, bronze
 - Admin capabilities: create, edit, deactivate catalog badges. Deactivated badges are read-only and not available for new applications.
 - Catalog search (MVP): filter by `category`, `level`, full-text title search, and `createdAt`. Only `active` badges returned.
 
@@ -188,8 +197,8 @@ SM-003 Operational Metrics (recommended)
 
 ## Appendix: Data Models (concise)
 - User: { id: UUID, email, name, role }
-- CatalogBadge: { id: UUID, title, description, category, level, pathsAllowed, createdAt, createdBy, deactivatedAt, status }
-- BadgeApplication: { id: UUID, catalogBadgeId, catalogBadgeVersion, applicantId, dateOfApplication, dateOfFulfillment, reason, createdAt, status }
+- CatalogBadge: { id: UUID, title, description, category, levels[]{level, description}, pathsAllowed, createdAt, createdBy, deactivatedAt, status }
+- BadgeApplication: { id: UUID, catalogBadgeId, selectedLevel, catalogBadgeVersion, applicantId, dateOfApplication, dateOfFulfillment, reason, createdAt, status }
 - PromotionTemplate: { id, path, level, requirements: [{category, level, count}] }
 - Promotion: { id: UUID, applicantId, path, targetLevel, badgeApplicationIds[], createdAt, createdBy, status, approvedBy, approvedAt, rejectedBy, rejectedAt, rejectReason }
 
