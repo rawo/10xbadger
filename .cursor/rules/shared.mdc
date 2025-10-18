@@ -3,9 +3,9 @@ description:
 globs: 
 alwaysApply: true
 ---
-# AI Rules for {app-name}
+# AI Rules for 10xbadger
 
-{project-description}
+Badger is a web application designed to replace legacy Excel and Confluence-based badge tracking with a single system for cataloging badges, submitting badge applications, and building promotion submissions. The MVP focuses on core flows for engineers and administrators: catalog browsing and search, badge application drafting and submission, administrative review, promotion building and submission, and basic role-based access via Google Workspace SSO.
 
 ## Tech Stack
 
