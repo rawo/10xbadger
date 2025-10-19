@@ -83,11 +83,22 @@ create policy users_select_authenticated on users for select to authenticated us
 create policy users_update_anon on users for update to anon using (false) with check (false);
 
 -- users: update policy for authenticated users - allow updating non-admin fields for own row
+-- users: update policy for authenticated users - allow updating non-admin fields for own row
+-- note: policy check must not reference `old`/`new`. to prevent privilege escalation
+-- we compare the attempted `is_admin` value against the current stored value via a
+-- subquery; only sessions with app.is_admin=true may change the stored is_admin flag.
 create policy users_update_authenticated on users for update to authenticated
 using (current_setting('app.current_user_id', true) is not null and id = current_setting('app.current_user_id', true)::uuid)
 with check (
-  -- prevent users from elevating themselves to admin via the standard update path
-  (current_setting('app.is_admin', true) = 'true') or (is_admin = old.is_admin)
+  (
+    -- allow if session is admin
+    (current_setting('app.is_admin', true) = 'true')
+    or
+    -- otherwise ensure the new is_admin matches the existing is_admin value in the table
+    (is_admin = (
+      select u.is_admin from users u where u.id = current_setting('app.current_user_id', true)::uuid
+    ))
+  )
 );
 -- rationale: only admins may change is_admin; normal users can update their profile
 
@@ -128,7 +139,8 @@ create policy catalog_badges_select_authenticated on catalog_badges for select t
 -- rationale: public catalog browsing should be open. other write operations are restricted.
 
 -- restrict insert/update/delete to admins only (explicit policies for both roles)
-create policy catalog_badges_insert_authenticated on catalog_badges for insert to authenticated using (current_setting('app.is_admin', true) = 'true') with check (current_setting('app.is_admin', true) = 'true');
+-- note: insert policies only support a `with check` clause; using-clause is invalid for inserts.
+create policy catalog_badges_insert_authenticated on catalog_badges for insert to authenticated with check (current_setting('app.is_admin', true) = 'true');
 create policy catalog_badges_update_authenticated on catalog_badges for update to authenticated using (current_setting('app.is_admin', true) = 'true') with check (current_setting('app.is_admin', true) = 'true');
 create policy catalog_badges_delete_authenticated on catalog_badges for delete to authenticated using (current_setting('app.is_admin', true) = 'true');
 
@@ -223,7 +235,8 @@ alter table promotion_templates enable row level security;
 create policy promotion_templates_select_anon on promotion_templates for select to anon using (true);
 create policy promotion_templates_select_authenticated on promotion_templates for select to authenticated using (true);
 
-create policy promotion_templates_insert_authenticated on promotion_templates for insert to authenticated using (current_setting('app.is_admin', true) = 'true') with check (current_setting('app.is_admin', true) = 'true');
+-- insert-only policy must use `with check` instead of `using` to validate the incoming row
+create policy promotion_templates_insert_authenticated on promotion_templates for insert to authenticated with check (current_setting('app.is_admin', true) = 'true');
 create policy promotion_templates_update_authenticated on promotion_templates for update to authenticated using (current_setting('app.is_admin', true) = 'true') with check (current_setting('app.is_admin', true) = 'true');
 create policy promotion_templates_delete_authenticated on promotion_templates for delete to authenticated using (current_setting('app.is_admin', true) = 'true');
 
@@ -363,7 +376,8 @@ alter table settings enable row level security;
 
 create policy settings_select_anon on settings for select to anon using (false);
 create policy settings_select_authenticated on settings for select to authenticated using (current_setting('app.is_admin', true) = 'true');
-create policy settings_insert_authenticated on settings for insert to authenticated using (current_setting('app.is_admin', true) = 'true') with check (current_setting('app.is_admin', true) = 'true');
+-- inserts to settings restricted to admins; validate via with check
+create policy settings_insert_authenticated on settings for insert to authenticated with check (current_setting('app.is_admin', true) = 'true');
 create policy settings_update_authenticated on settings for update to authenticated using (current_setting('app.is_admin', true) = 'true') with check (current_setting('app.is_admin', true) = 'true');
 create policy settings_delete_authenticated on settings for delete to authenticated using (current_setting('app.is_admin', true) = 'true');
 
