@@ -1,0 +1,2 @@
+id,email,display_name,is_admin,google_sub,created_at,last_seen_at
+550e8400-e29b-41d4-a716-446655440100,admin@goodcompany.com,Admin User,true,google-oauth-sub-admin-123456,2025-01-01T08:00:00Z,2025-01-22T15:30:00Z
