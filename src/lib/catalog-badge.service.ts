@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@/db/supabase.client";
-import type { CatalogBadgeListItemDto, PaginatedResponse, PaginationMetadata } from "@/types";
+import type { CatalogBadgeListItemDto, CatalogBadgeDetailDto, PaginatedResponse, PaginationMetadata } from "@/types";
 import type { ListCatalogBadgesQuery } from "./validation/catalog-badge.validation";
 
 /**
@@ -106,5 +106,27 @@ export class CatalogBadgeService {
       data: data as CatalogBadgeListItemDto[],
       pagination,
     };
+  }
+
+  /**
+   * Retrieves a single catalog badge by ID
+   *
+   * @param id - Badge UUID
+   * @returns Catalog badge if found, null otherwise
+   * @throws Error if database query fails
+   */
+  async getCatalogBadgeById(id: string): Promise<CatalogBadgeDetailDto | null> {
+    const { data, error } = await this.supabase.from("catalog_badges").select("*").eq("id", id).single();
+
+    if (error) {
+      // Handle "not found" vs actual errors
+      if (error.code === "PGRST116") {
+        // PostgREST error code for no rows returned
+        return null;
+      }
+      throw new Error(`Failed to fetch catalog badge: ${error.message}`);
+    }
+
+    return data as CatalogBadgeDetailDto;
   }
 }
