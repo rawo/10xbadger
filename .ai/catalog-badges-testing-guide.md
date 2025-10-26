@@ -454,6 +454,290 @@ curl -X GET "http://localhost:3000/api/catalog-badges/"
 
 ---
 
+## Test Scenarios - Create Endpoint
+
+### POST /api/catalog-badges
+
+### 22. Create Badge - Valid Request (Minimal Fields)
+
+**Description**: Create a new badge with only required fields
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Docker Expert",
+    "category": "technical",
+    "level": "silver"
+  }'
+```
+
+**Expected Response**: `201 Created`
+```json
+{
+  "id": "uuid-here",
+  "title": "Docker Expert",
+  "description": null,
+  "category": "technical",
+  "level": "silver",
+  "status": "active",
+  "created_by": "550e8400-e29b-41d4-a716-446655440100",
+  "created_at": "2025-01-22T...",
+  "deactivated_at": null,
+  "version": 1,
+  "metadata": {}
+}
+```
+
+---
+
+### 23. Create Badge - Valid Request (All Fields)
+
+**Description**: Create a new badge with all optional fields provided
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Kubernetes Expert",
+    "description": "Advanced knowledge of Kubernetes orchestration, deployment strategies, and cluster management",
+    "category": "technical",
+    "level": "gold",
+    "metadata": {
+      "skills": ["k8s", "helm", "deployment", "monitoring"],
+      "difficulty": "advanced",
+      "prerequisites": ["Docker Expert"]
+    }
+  }'
+```
+
+**Expected Response**: `201 Created` with complete badge data including description and metadata
+
+---
+
+### 24. Create Badge - Missing Required Field (title)
+
+**Description**: Attempt to create badge without title
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "technical",
+    "level": "gold"
+  }'
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Validation failed",
+  "details": [
+    {
+      "field": "title",
+      "message": "Title is required"
+    }
+  ]
+}
+```
+
+---
+
+### 25. Create Badge - Missing Required Field (category)
+
+**Description**: Attempt to create badge without category
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Test Badge",
+    "level": "gold"
+  }'
+```
+
+**Expected Response**: `400 Bad Request` with category validation error
+
+---
+
+### 26. Create Badge - Invalid Category
+
+**Description**: Provide invalid category value
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Invalid Badge",
+    "category": "invalid_category",
+    "level": "gold"
+  }'
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Validation failed",
+  "details": [
+    {
+      "field": "category",
+      "message": "Category must be one of: technical, organizational, softskilled"
+    }
+  ]
+}
+```
+
+---
+
+### 27. Create Badge - Invalid Level
+
+**Description**: Provide invalid level value
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Test Badge",
+    "category": "technical",
+    "level": "platinum"
+  }'
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Validation failed",
+  "details": [
+    {
+      "field": "level",
+      "message": "Level must be one of: gold, silver, bronze"
+    }
+  ]
+}
+```
+
+---
+
+### 28. Create Badge - Title Too Long
+
+**Description**: Provide title exceeding 200 characters
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "A very long title that exceeds the maximum allowed length of 200 characters. This title is intentionally made extremely verbose to test the validation logic that should reject titles that are too long. We need to keep adding more text here to reach the 200 character limit and go beyond it to trigger the validation error.",
+    "category": "technical",
+    "level": "gold"
+  }'
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Validation failed",
+  "details": [
+    {
+      "field": "title",
+      "message": "Title must be at most 200 characters"
+    }
+  ]
+}
+```
+
+---
+
+### 29. Create Badge - Description Too Long
+
+**Description**: Provide description exceeding 2000 characters
+
+**Request**: (curl command with 2000+ character description)
+
+**Expected Response**: `400 Bad Request` with description length validation error
+
+---
+
+### 30. Create Badge - Invalid JSON
+
+**Description**: Send malformed JSON in request body
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{invalid json'
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Invalid JSON in request body"
+}
+```
+
+---
+
+### 31. Create Badge - Multiple Validation Errors
+
+**Description**: Send request with multiple invalid fields
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "invalid",
+    "level": "platinum"
+  }'
+```
+
+**Expected Response**: `400 Bad Request` with multiple validation errors (missing title, invalid category, invalid level)
+
+---
+
+### 32. Create Badge - Empty Title
+
+**Description**: Provide empty string for title
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "",
+    "category": "technical",
+    "level": "gold"
+  }'
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Validation failed",
+  "details": [
+    {
+      "field": "title",
+      "message": "Title is required"
+    }
+  ]
+}
+```
+
+---
+
 ## Using Browser Dev Tools
 
 You can also test using the browser:
@@ -523,6 +807,125 @@ fetch('/api/catalog-badges/123')
     return res.json();
   })
   .then(data => console.log('Validation error:', data));
+
+// ============================================================================
+// Create Endpoint Tests
+// ============================================================================
+
+// Test 1: Create badge with minimal fields
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: 'Docker Expert',
+    category: 'technical',
+    level: 'silver'
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 201
+    return res.json();
+  })
+  .then(data => console.log('Created badge:', data));
+
+// Test 2: Create badge with all fields
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: 'Kubernetes Expert',
+    description: 'Advanced knowledge of Kubernetes orchestration',
+    category: 'technical',
+    level: 'gold',
+    metadata: {
+      skills: ['k8s', 'helm', 'deployment'],
+      difficulty: 'advanced'
+    }
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 201
+    return res.json();
+  })
+  .then(data => console.log('Created badge:', data));
+
+// Test 3: Missing required field (title)
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    category: 'technical',
+    level: 'gold'
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Validation error:', data));
+
+// Test 4: Invalid category
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: 'Test Badge',
+    category: 'invalid_category',
+    level: 'gold'
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Validation error:', data));
+
+// Test 5: Invalid level
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: 'Test Badge',
+    category: 'technical',
+    level: 'platinum'
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Validation error:', data));
+
+// Test 6: Empty title
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    title: '',
+    category: 'technical',
+    level: 'gold'
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Validation error:', data));
+
+// Test 7: Multiple validation errors
+fetch('/api/catalog-badges', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    category: 'invalid',
+    level: 'platinum'
+  })
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Multiple validation errors:', data));
 ```
 
 ---
@@ -563,6 +966,31 @@ Once you run manual tests, verify:
 - [ ] No authentication required in development mode
 - [ ] Works with all three sample badge IDs
 - [ ] Root endpoint (/) routes to list endpoint
+
+### Create Endpoint (POST /api/catalog-badges)
+
+- [ ] Returns 201 Created for valid request with minimal fields
+- [ ] Returns 201 Created for valid request with all fields
+- [ ] Created badge has status = 'active' by default
+- [ ] Created badge has version = 1 by default
+- [ ] Created badge has created_by set to admin user
+- [ ] Description defaults to null when not provided
+- [ ] Metadata defaults to {} when not provided
+- [ ] Returns 400 Bad Request for missing title
+- [ ] Returns 400 Bad Request for missing category
+- [ ] Returns 400 Bad Request for missing level
+- [ ] Returns 400 Bad Request for invalid category value
+- [ ] Returns 400 Bad Request for invalid level value
+- [ ] Returns 400 Bad Request for title exceeding 200 characters
+- [ ] Returns 400 Bad Request for description exceeding 2000 characters
+- [ ] Returns 400 Bad Request for empty title string
+- [ ] Returns 400 Bad Request for invalid JSON in body
+- [ ] Returns multiple validation errors when multiple fields are invalid
+- [ ] Error messages are clear and field-specific
+- [ ] Database errors return 500 with generic message
+- [ ] No authentication required in development mode
+- [ ] created_by uses default admin user ID in development
+- [ ] Metadata accepts complex JSON objects
 
 ---
 
@@ -662,7 +1090,7 @@ After manual testing:
 
 ## Summary
 
-This testing guide covers both catalog badge API endpoints:
+This testing guide covers all three catalog badge API endpoints:
 
 ✅ **List Endpoint** (GET /api/catalog-badges)
 - 12 test scenarios covering filters, search, pagination, validation, and authorization
@@ -674,4 +1102,10 @@ This testing guide covers both catalog badge API endpoints:
 - UUID format validation testing
 - Primary key lookup performance testing
 
-Both endpoints are ready for development testing with authentication disabled. Remember to re-enable authentication before production deployment!
+✅ **Create Endpoint** (POST /api/catalog-badges)
+- 11 test scenarios covering valid requests, missing fields, invalid values, and edge cases
+- Comprehensive request body validation testing
+- Field-level error message validation
+- Default value verification (status, version, metadata)
+
+All three endpoints are ready for development testing with authentication disabled. Remember to re-enable authentication before production deployment!

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { CatalogBadgeService } from "@/lib/catalog-badge.service";
-import { listCatalogBadgesQuerySchema } from "@/lib/validation/catalog-badge.validation";
+import { listCatalogBadgesQuerySchema, createCatalogBadgeSchema } from "@/lib/validation/catalog-badge.validation";
 import type { ApiError } from "@/types";
 
 /**
@@ -155,6 +155,166 @@ export const GET: APIRoute = async (context) => {
     const apiError: ApiError = {
       error: "internal_error",
       message: "An unexpected error occurred while fetching catalog badges",
+    };
+    return new Response(JSON.stringify(apiError), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
+
+/**
+ * POST /api/catalog-badges
+ *
+ * Creates a new catalog badge (admin only).
+ *
+ * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
+ * TODO: Re-enable authentication and admin check before production deployment
+ *
+ * Request Body:
+ * - title: Badge title (required, max 200 chars)
+ * - description: Badge description (optional, max 2000 chars)
+ * - category: Badge category (required, enum: technical/organizational/softskilled)
+ * - level: Badge level (required, enum: gold/silver/bronze)
+ * - metadata: Additional metadata (optional, JSON object)
+ *
+ * @returns 201 Created with catalog badge details
+ * @returns 400 Bad Request if validation fails
+ * @returns 401 Unauthorized if not authenticated (production)
+ * @returns 403 Forbidden if not admin (production)
+ * @returns 500 Internal Server Error on unexpected errors
+ */
+export const POST: APIRoute = async (context) => {
+  try {
+    // =========================================================================
+    // Step 1: Parse Request Body
+    // =========================================================================
+    let body: unknown;
+    try {
+      body = await context.request.json();
+    } catch {
+      const apiError: ApiError = {
+        error: "validation_error",
+        message: "Invalid JSON in request body",
+      };
+      return new Response(JSON.stringify(apiError), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================================================================
+    // Step 2: Validate Request Body
+    // =========================================================================
+    const validation = createCatalogBadgeSchema.safeParse(body);
+
+    if (!validation.success) {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Validation failed",
+        details: validation.error.issues.map((err) => ({
+          field: err.path.join("."),
+          message: err.message,
+        })),
+      };
+      return new Response(JSON.stringify(error), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const command = validation.data;
+
+    // =========================================================================
+    // DEVELOPMENT MODE: Authentication Disabled
+    // =========================================================================
+    // TODO: Re-enable authentication before production deployment
+    // For now, use a default admin user ID for development
+
+    const createdBy = "550e8400-e29b-41d4-a716-446655440100"; // Default admin user from sample data
+
+    // =========================================================================
+    // PRODUCTION CODE (Currently Disabled)
+    // =========================================================================
+    // Uncomment the code below when authentication is ready:
+    /*
+    // Step 3: Authentication Check
+    const {
+      data: { user },
+      error: authError,
+    } = await context.locals.supabase.auth.getUser();
+
+    if (authError || !user) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "Authentication required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Step 4: Get User Info (Admin Status)
+    const { data: userData, error: userError } = await context.locals.supabase
+      .from("users")
+      .select("id, is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "User not found",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Step 5: Authorization Check (Admin Only)
+    if (!userData.is_admin) {
+      const error: ApiError = {
+        error: "forbidden",
+        message: "Admin access required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const createdBy = userData.id;
+    */
+
+    // =========================================================================
+    // Step 6: Create Badge via Service
+    // =========================================================================
+    const service = new CatalogBadgeService(context.locals.supabase);
+    const badge = await service.createCatalogBadge(command, createdBy);
+
+    // =========================================================================
+    // Step 7: Return Success Response
+    // =========================================================================
+    return new Response(JSON.stringify(badge), {
+      status: 201,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    // =========================================================================
+    // Error Handling: Unexpected Errors
+    // =========================================================================
+    // Log error for debugging (server-side only)
+    // eslint-disable-next-line no-console
+    console.error("Error in POST /api/catalog-badges:", error);
+
+    // Return generic error to client (don't expose internal details)
+    const apiError: ApiError = {
+      error: "internal_error",
+      message: "An unexpected error occurred while creating the catalog badge",
     };
     return new Response(JSON.stringify(apiError), {
       status: 500,

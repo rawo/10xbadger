@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "@/db/supabase.client";
-import type { CatalogBadgeListItemDto, CatalogBadgeDetailDto, PaginatedResponse, PaginationMetadata } from "@/types";
+import type { Json } from "@/db/database.types";
+import type {
+  CatalogBadgeListItemDto,
+  CatalogBadgeDetailDto,
+  CreateCatalogBadgeCommand,
+  PaginatedResponse,
+  PaginationMetadata,
+} from "@/types";
 import type { ListCatalogBadgesQuery } from "./validation/catalog-badge.validation";
 
 /**
@@ -125,6 +132,37 @@ export class CatalogBadgeService {
         return null;
       }
       throw new Error(`Failed to fetch catalog badge: ${error.message}`);
+    }
+
+    return data as CatalogBadgeDetailDto;
+  }
+
+  /**
+   * Creates a new catalog badge
+   *
+   * @param command - Badge creation data
+   * @param createdBy - User ID of the creator
+   * @returns Created catalog badge with all fields
+   * @throws Error if database insertion fails
+   */
+  async createCatalogBadge(command: CreateCatalogBadgeCommand, createdBy: string): Promise<CatalogBadgeDetailDto> {
+    const { data, error } = await this.supabase
+      .from("catalog_badges")
+      .insert({
+        title: command.title,
+        description: command.description || null,
+        category: command.category,
+        level: command.level,
+        metadata: (command.metadata || {}) as Json,
+        status: "active",
+        version: 1,
+        created_by: createdBy,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create catalog badge: ${error.message}`);
     }
 
     return data as CatalogBadgeDetailDto;

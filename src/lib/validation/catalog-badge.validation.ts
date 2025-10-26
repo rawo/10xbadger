@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { BadgeCategory, BadgeLevel, CatalogBadgeStatus } from "@/types";
 
 /**
  * Validation schema for GET /api/catalog-badges query parameters
@@ -9,16 +8,16 @@ import { BadgeCategory, BadgeLevel, CatalogBadgeStatus } from "@/types";
  */
 export const listCatalogBadgesQuerySchema = z.object({
   // Filter by badge category
-  category: z.enum([BadgeCategory.Technical, BadgeCategory.Organizational, BadgeCategory.Softskilled]).optional(),
+  category: z.enum(["technical", "organizational", "softskilled"]).optional(),
 
   // Filter by badge level
-  level: z.enum([BadgeLevel.Gold, BadgeLevel.Silver, BadgeLevel.Bronze]).optional(),
+  level: z.enum(["gold", "silver", "bronze"]).optional(),
 
   // Full-text search query (max 200 characters)
   q: z.string().max(200).optional(),
 
   // Filter by badge status (admin only - enforced at route level)
-  status: z.enum([CatalogBadgeStatus.Active, CatalogBadgeStatus.Inactive]).optional(),
+  status: z.enum(["active", "inactive"]).optional(),
 
   // Sort field
   sort: z.enum(["created_at", "title"]).default("created_at"),
@@ -37,3 +36,31 @@ export const listCatalogBadgesQuerySchema = z.object({
  * Inferred TypeScript type from the Zod schema
  */
 export type ListCatalogBadgesQuery = z.infer<typeof listCatalogBadgesQuerySchema>;
+
+/**
+ * Validation schema for POST /api/catalog-badges
+ *
+ * Validates all fields for creating a new catalog badge.
+ * Uses Zod for runtime type checking and validation.
+ */
+export const createCatalogBadgeSchema = z.object({
+  // Required: Badge title (non-empty, max 200 chars)
+  title: z.string().min(1, "Title is required").max(200, "Title must be at most 200 characters"),
+
+  // Optional: Detailed description (max 2000 chars)
+  description: z.string().max(2000, "Description must be at most 2000 characters").optional(),
+
+  // Required: Badge category (enum)
+  category: z.enum(["technical", "organizational", "softskilled"]),
+
+  // Required: Badge level (enum)
+  level: z.enum(["gold", "silver", "bronze"]),
+
+  // Optional: Metadata (JSON object, defaults to {})
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
+});
+
+/**
+ * Inferred TypeScript type from the create catalog badge schema
+ */
+export type CreateCatalogBadgeSchema = z.infer<typeof createCatalogBadgeSchema>;
