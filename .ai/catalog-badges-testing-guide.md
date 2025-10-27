@@ -3,20 +3,32 @@
 This guide provides instructions for manually testing the catalog badges API endpoints:
 - `GET /api/catalog-badges` - List badges with filtering and pagination
 - `GET /api/catalog-badges/:id` - Get a single badge by ID
+- `POST /api/catalog-badges` - Create a new badge
+- `POST /api/catalog-badges/:id/deactivate` - Deactivate a badge
 
 ## ⚠️ Development Mode Notice
 
-**Authentication is currently DISABLED for development purposes on both endpoints.**
+**Authentication is currently DISABLED for development purposes on all endpoints.**
 
-### List Endpoint (`/api/catalog-badges`)
+### List Endpoint (`GET /api/catalog-badges`)
 - No authentication tokens required
 - Default behavior: non-admin user (can only view active badges)
 - To test admin features: Change `isAdmin = false` to `isAdmin = true` in `src/pages/api/catalog-badges/index.ts`
 
-### Detail Endpoint (`/api/catalog-badges/:id`)
+### Detail Endpoint (`GET /api/catalog-badges/:id`)
 - No authentication tokens required
 - All badges accessible regardless of status
 - No role-based filtering applied
+
+### Create Endpoint (`POST /api/catalog-badges`)
+- No authentication tokens required
+- Default behavior: admin user (can create badges)
+- Uses default admin user ID for created_by field
+
+### Deactivate Endpoint (`POST /api/catalog-badges/:id/deactivate`)
+- No authentication tokens required
+- Default behavior: admin user (can deactivate badges)
+- Sets badge status to 'inactive' and records deactivated_at timestamp
 
 Authentication will be re-enabled before production deployment.
 
@@ -738,6 +750,171 @@ curl -X POST "http://localhost:3000/api/catalog-badges" \
 
 ---
 
+## Test Scenarios - Deactivate Endpoint
+
+### POST /api/catalog-badges/:id/deactivate
+
+### 33. Deactivate Active Badge - Happy Path
+
+**Description**: Deactivate an active badge successfully
+
+**Request**:
+```bash
+# Replace with actual badge ID from sample data
+curl -X POST "http://localhost:3000/api/catalog-badges/550e8400-e29b-41d4-a716-446655440001/deactivate"
+```
+
+**Expected Response**: `200 OK`
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440001",
+  "title": "PostgreSQL Expert",
+  "description": "Demonstrated advanced knowledge...",
+  "category": "technical",
+  "level": "gold",
+  "status": "inactive",
+  "created_by": "550e8400-e29b-41d4-a716-446655440000",
+  "created_at": "2025-01-10T09:00:00Z",
+  "deactivated_at": "2025-01-22T16:00:00Z",
+  "version": 1,
+  "metadata": {}
+}
+```
+
+**Verification**:
+- `status` changed from "active" to "inactive"
+- `deactivated_at` is set to current timestamp
+- `version` remains unchanged (deactivation doesn't change content)
+- All other fields remain unchanged
+
+---
+
+### 34. Deactivate Badge - Not Found
+
+**Description**: Attempt to deactivate badge with non-existent UUID
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges/550e8400-e29b-41d4-a716-446655449999/deactivate"
+```
+
+**Expected Response**: `404 Not Found`
+```json
+{
+  "error": "not_found",
+  "message": "Catalog badge not found"
+}
+```
+
+---
+
+### 35. Deactivate Badge - Invalid UUID Format
+
+**Description**: Attempt to deactivate badge with invalid UUID
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges/invalid-id/deactivate"
+```
+
+**Expected Response**: `400 Bad Request`
+```json
+{
+  "error": "validation_error",
+  "message": "Invalid badge ID format",
+  "details": [
+    {
+      "field": "id",
+      "message": "Invalid badge ID format"
+    }
+  ]
+}
+```
+
+---
+
+### 36. Deactivate Badge - Numeric ID
+
+**Description**: Attempt to deactivate badge using numeric ID
+
+**Request**:
+```bash
+curl -X POST "http://localhost:3000/api/catalog-badges/123/deactivate"
+```
+
+**Expected Response**: `400 Bad Request` with UUID validation error
+
+---
+
+### 37. Deactivate Badge Already Inactive - Conflict
+
+**Description**: Attempt to deactivate a badge that is already inactive (idempotency check)
+
+**Request**:
+```bash
+# First deactivate the badge (should succeed)
+curl -X POST "http://localhost:3000/api/catalog-badges/550e8400-e29b-41d4-a716-446655440002/deactivate"
+
+# Then try to deactivate it again (should fail)
+curl -X POST "http://localhost:3000/api/catalog-badges/550e8400-e29b-41d4-a716-446655440002/deactivate"
+```
+
+**Expected Response**: `409 Conflict`
+```json
+{
+  "error": "invalid_status",
+  "message": "Badge is already inactive",
+  "current_status": "inactive"
+}
+```
+
+**Note**: The second request should return 409 Conflict, not 200 OK. This ensures clients know whether the deactivation action was actually performed.
+
+---
+
+### 38. Verify Inactive Badge Hidden from Non-Admin List
+
+**Description**: Verify that deactivated badges don't appear in catalog list for non-admin users
+
+**Setup**: Deactivate a badge first
+
+**Request**:
+```bash
+# Deactivate badge
+curl -X POST "http://localhost:3000/api/catalog-badges/550e8400-e29b-41d4-a716-446655440003/deactivate"
+
+# Then list badges (non-admin behavior - default in dev mode)
+curl -X GET "http://localhost:3000/api/catalog-badges"
+```
+
+**Expected Result**: The deactivated badge should NOT appear in the list results
+
+**Note**: To test admin behavior (seeing inactive badges), change `isAdmin = true` in `src/pages/api/catalog-badges/index.ts` and add `?status=inactive` query parameter.
+
+---
+
+### 39. Verify Existing Badge Applications Remain Valid
+
+**Description**: Verify that existing badge applications are not affected by badge deactivation
+
+**Setup**:
+1. Create a badge application for a badge (requires badge applications endpoint)
+2. Deactivate the badge
+3. Verify the badge application still exists
+
+**Request**:
+```bash
+# Deactivate badge
+curl -X POST "http://localhost:3000/api/catalog-badges/550e8400-e29b-41d4-a716-446655440001/deactivate"
+
+# Query badge applications for this badge (requires GET /api/badge-applications endpoint)
+# Verify application still exists and is unchanged
+```
+
+**Expected Result**: Badge applications remain valid and unchanged after badge deactivation
+
+---
+
 ## Using Browser Dev Tools
 
 You can also test using the browser:
@@ -926,6 +1103,83 @@ fetch('/api/catalog-badges', {
     return res.json();
   })
   .then(data => console.log('Multiple validation errors:', data));
+
+// ============================================================================
+// Deactivate Endpoint Tests
+// ============================================================================
+
+// Test 1: Deactivate active badge (happy path)
+fetch('/api/catalog-badges/550e8400-e29b-41d4-a716-446655440001/deactivate', {
+  method: 'POST'
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 200
+    return res.json();
+  })
+  .then(data => {
+    console.log('Deactivated badge:', data);
+    console.log('Status:', data.status); // Should be 'inactive'
+    console.log('Deactivated at:', data.deactivated_at); // Should have timestamp
+  });
+
+// Test 2: Try to deactivate already inactive badge (conflict)
+fetch('/api/catalog-badges/550e8400-e29b-41d4-a716-446655440001/deactivate', {
+  method: 'POST'
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 409 if already inactive
+    return res.json();
+  })
+  .then(data => console.log('Conflict error:', data));
+
+// Test 3: Deactivate non-existent badge (not found)
+fetch('/api/catalog-badges/550e8400-e29b-41d4-a716-446655449999/deactivate', {
+  method: 'POST'
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 404
+    return res.json();
+  })
+  .then(data => console.log('Not found error:', data));
+
+// Test 4: Invalid UUID format
+fetch('/api/catalog-badges/invalid-id/deactivate', {
+  method: 'POST'
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Validation error:', data));
+
+// Test 5: Numeric ID
+fetch('/api/catalog-badges/123/deactivate', {
+  method: 'POST'
+})
+  .then(res => {
+    console.log('Status:', res.status); // Should be 400
+    return res.json();
+  })
+  .then(data => console.log('Validation error:', data));
+
+// Test 6: Verify deactivated badge hidden from list (non-admin)
+// First deactivate, then list badges
+fetch('/api/catalog-badges/550e8400-e29b-41d4-a716-446655440003/deactivate', {
+  method: 'POST'
+})
+  .then(res => res.json())
+  .then(data => {
+    console.log('Deactivated:', data.title);
+    // Now list badges - deactivated badge should not appear
+    return fetch('/api/catalog-badges');
+  })
+  .then(res => res.json())
+  .then(data => {
+    console.log('Badge list:', data.data);
+    // Check if deactivated badge is in list (should not be)
+    const found = data.data.find(b => b.id === '550e8400-e29b-41d4-a716-446655440003');
+    console.log('Deactivated badge in list?', found ? 'YES (ERROR)' : 'NO (CORRECT)');
+  });
 ```
 
 ---
@@ -991,6 +1245,26 @@ Once you run manual tests, verify:
 - [ ] No authentication required in development mode
 - [ ] created_by uses default admin user ID in development
 - [ ] Metadata accepts complex JSON objects
+
+### Deactivate Endpoint (POST /api/catalog-badges/:id/deactivate)
+
+- [ ] Returns 200 OK for successfully deactivated badge
+- [ ] Deactivated badge has status = 'inactive'
+- [ ] Deactivated badge has deactivated_at timestamp set
+- [ ] Version remains unchanged after deactivation
+- [ ] All other fields remain unchanged after deactivation
+- [ ] Returns 404 Not Found for non-existent badge (valid UUID)
+- [ ] Returns 400 Bad Request for invalid UUID format
+- [ ] UUID validation rejects numeric IDs (123)
+- [ ] UUID validation rejects random strings (invalid-id)
+- [ ] Returns 409 Conflict when deactivating already inactive badge
+- [ ] Conflict response includes current_status field
+- [ ] Deactivated badges hidden from non-admin catalog list
+- [ ] Admin users can view deactivated badges with status filter
+- [ ] Existing badge applications remain valid after deactivation
+- [ ] Error messages are clear and specific
+- [ ] Database errors return 500 with generic message
+- [ ] No authentication required in development mode
 
 ---
 
@@ -1090,7 +1364,7 @@ After manual testing:
 
 ## Summary
 
-This testing guide covers all three catalog badge API endpoints:
+This testing guide covers all four catalog badge API endpoints:
 
 ✅ **List Endpoint** (GET /api/catalog-badges)
 - 12 test scenarios covering filters, search, pagination, validation, and authorization
@@ -1108,4 +1382,11 @@ This testing guide covers all three catalog badge API endpoints:
 - Field-level error message validation
 - Default value verification (status, version, metadata)
 
-All three endpoints are ready for development testing with authentication disabled. Remember to re-enable authentication before production deployment!
+✅ **Deactivate Endpoint** (POST /api/catalog-badges/:id/deactivate)
+- 7 test scenarios covering happy path, validation errors, conflict handling, and business rules
+- UUID parameter validation testing
+- Idempotency verification (409 Conflict on duplicate deactivation)
+- Status transition testing (active → inactive)
+- Verification of related data integrity (badge applications remain valid)
+
+All four endpoints are ready for development testing with authentication disabled. Remember to re-enable authentication before production deployment!

@@ -167,4 +167,59 @@ export class CatalogBadgeService {
 
     return data as CatalogBadgeDetailDto;
   }
+
+  /**
+   * Deactivates a catalog badge
+   *
+   * Sets status to 'inactive' and records deactivation timestamp.
+   * Only active badges can be deactivated.
+   *
+   * @param id - Badge UUID
+   * @returns Deactivated badge if successful, null if not found
+   * @throws Error with message 'BADGE_ALREADY_INACTIVE' if badge is already inactive
+   * @throws Error if database query fails
+   */
+  async deactivateCatalogBadge(id: string): Promise<CatalogBadgeDetailDto | null> {
+    // Step 1: Fetch badge to validate it exists and check status
+    const { data: badge, error: fetchError } = await this.supabase
+      .from("catalog_badges")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      // Handle "not found" vs actual errors
+      if (fetchError.code === "PGRST116") {
+        // PostgREST error code for no rows returned
+        return null;
+      }
+      throw new Error(`Failed to fetch catalog badge: ${fetchError.message}`);
+    }
+
+    // Step 2: Check if badge is already inactive
+    if (badge.status === "inactive") {
+      throw new Error("BADGE_ALREADY_INACTIVE");
+    }
+
+    // Step 3: Update badge to inactive status
+    const deactivatedAt = new Date().toISOString();
+    const { error: updateError } = await this.supabase
+      .from("catalog_badges")
+      .update({
+        status: "inactive",
+        deactivated_at: deactivatedAt,
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      throw new Error(`Failed to deactivate catalog badge: ${updateError.message}`);
+    }
+
+    // Step 4: Return the updated badge data (merge original badge with updated fields)
+    return {
+      ...badge,
+      status: "inactive",
+      deactivated_at: deactivatedAt,
+    } as CatalogBadgeDetailDto;
+  }
 }

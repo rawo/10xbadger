@@ -64,3 +64,18 @@ export const createCatalogBadgeSchema = z.object({
  * Inferred TypeScript type from the create catalog badge schema
  */
 export type CreateCatalogBadgeSchema = z.infer<typeof createCatalogBadgeSchema>;
+
+/**
+ * Validation schema for UUID path parameters
+ *
+ * Used for endpoints that take :id in the path (e.g., /api/catalog-badges/:id)
+ * Validates that the ID is a valid UUID format.
+ */
+export const uuidParamSchema = z.object({
+  id: z.string().uuid("Invalid badge ID format"),
+});
+
+/**
+ * Inferred TypeScript type from the UUID param schema
+ */
+export type UuidParam = z.infer<typeof uuidParamSchema>;
