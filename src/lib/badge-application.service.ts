@@ -680,4 +680,90 @@ export class BadgeApplicationService {
 
     return full;
   }
+
+  /**
+   * Rejects a badge application as an admin reviewer.
+   * - Transitions status -> 'rejected'
+   * - Sets reviewed_by, reviewed_at, and review_reason
+   * - Returns full application details after update
+   * @param id - badge application id
+   * @param reviewerId - id of reviewer (optional for development)
+   * @param reviewReason - optional review note
+   */
+  async rejectBadgeApplication(
+    id: string,
+    reviewerId?: string,
+    reviewReason?: string
+  ): Promise<BadgeApplicationDetailDto> {
+    // Fetch minimal application row for checks
+    const { data: row, error: fetchErr } = await this.supabase
+      .from("badge_applications")
+      .select("id, status, catalog_badge_id")
+      .eq("id", id)
+      .single();
+
+    if (fetchErr) {
+      const fetchErrWithCode = fetchErr as { code?: string; message?: string };
+      if (fetchErrWithCode.code === "PGRST116") throw new Error("NOT_FOUND");
+      throw new Error(`Failed to fetch badge application: ${fetchErrWithCode.message ?? String(fetchErr)}`);
+    }
+
+    // Only allow rejection from 'submitted' status
+    if (row.status !== "submitted") {
+      throw new Error("INVALID_STATUS_TRANSITION");
+    }
+
+    const updateData: Record<string, unknown> = {
+      status: "rejected",
+      reviewed_by: reviewerId || null,
+      reviewed_at: new Date().toISOString(),
+      review_reason: reviewReason || null,
+    };
+
+    const { error: updateError } = await this.supabase
+      .from("badge_applications")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(`Failed to reject badge application: ${updateError.message}`);
+    }
+
+    // Return full details
+    const full = await this.getBadgeApplicationById(id);
+    if (!full) throw new Error("NOT_FOUND");
+
+    // Best-effort: record audit log for rejection
+    try {
+      await this.supabase.from("audit_logs").insert({
+        action: "reject_badge_application",
+        resource: "badge_applications",
+        resource_id: id,
+        requester_id: reviewerId || null,
+        meta: { review_reason: reviewReason || null },
+      });
+    } catch (e) {
+      // do not block on audit failure
+      // eslint-disable-next-line no-console
+      console.error("Failed to write audit log for rejectBadgeApplication:", e);
+    }
+
+    // Best-effort: enqueue async event for notifications/workers
+    try {
+      await this.supabase.from("events").insert({
+        type: "badge_application.rejected",
+        resource: "badge_applications",
+        resource_id: id,
+        payload: { id, action: "rejected" },
+      });
+    } catch (e) {
+      // best-effort
+      // eslint-disable-next-line no-console
+      console.error("Failed to enqueue event for rejectBadgeApplication:", e);
+    }
+
+    return full;
+  }
 }
