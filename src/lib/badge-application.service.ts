@@ -1,18 +1,29 @@
 import type { SupabaseClient } from "@/db/supabase.client";
 import type {
   BadgeApplicationListItemDto,
+  BadgeApplicationDetailDto,
   PaginatedResponse,
   PaginationMetadata,
   CatalogBadgeSummary,
+  CatalogBadgeDetail,
+  UserSummary,
   BadgeApplicationRow,
 } from "@/types";
 import type { ListBadgeApplicationsQuery } from "./validation/badge-application.validation";
 
 /**
- * Type for badge application query result with joined catalog badge
+ * Type for badge application query result with joined catalog badge (summary)
  */
 interface BadgeApplicationWithCatalogBadge extends BadgeApplicationRow {
   catalog_badge: CatalogBadgeSummary;
+}
+
+/**
+ * Type for badge application query result with full catalog badge and applicant details
+ */
+interface BadgeApplicationWithFullDetails extends BadgeApplicationRow {
+  catalog_badge: CatalogBadgeDetail;
+  applicant: UserSummary;
 }
 
 /**
@@ -142,5 +153,73 @@ export class BadgeApplicationService {
       data: applications,
       pagination,
     };
+  }
+
+  /**
+   * Retrieves a single badge application by ID with full details
+   *
+   * Includes nested catalog badge details (with description and version)
+   * and applicant user information.
+   *
+   * @param id - Badge application UUID
+   * @returns Badge application with nested data if found, null otherwise
+   * @throws Error if database query fails
+   */
+  async getBadgeApplicationById(id: string): Promise<BadgeApplicationDetailDto | null> {
+    // Build query with joins for catalog badge and applicant user
+    const { data, error } = await this.supabase
+      .from("badge_applications")
+      .select(
+        `
+        *,
+        catalog_badge:catalog_badges!catalog_badge_id (
+          id,
+          title,
+          description,
+          category,
+          level,
+          version
+        ),
+        applicant:users!applicant_id (
+          id,
+          display_name,
+          email
+        )
+      `
+      )
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      // Handle "not found" vs actual errors
+      if (error.code === "PGRST116") {
+        // PostgREST error code for no rows returned
+        return null;
+      }
+      throw new Error(`Failed to fetch badge application: ${error.message}`);
+    }
+
+    // Type the response as BadgeApplicationWithFullDetails for proper type checking
+    const typedData = data as unknown as BadgeApplicationWithFullDetails;
+
+    // Transform to proper DTO type
+    return {
+      id: typedData.id,
+      applicant_id: typedData.applicant_id,
+      catalog_badge_id: typedData.catalog_badge_id,
+      catalog_badge_version: typedData.catalog_badge_version,
+      date_of_application: typedData.date_of_application,
+      date_of_fulfillment: typedData.date_of_fulfillment,
+      reason: typedData.reason,
+      status: typedData.status,
+      submitted_at: typedData.submitted_at,
+      reviewed_by: typedData.reviewed_by,
+      reviewed_at: typedData.reviewed_at,
+      review_reason: typedData.review_reason,
+      created_at: typedData.created_at,
+      updated_at: typedData.updated_at,
+      catalog_badge: typedData.catalog_badge,
+      applicant: typedData.applicant,
+    } as BadgeApplicationDetailDto;
   }
 }
