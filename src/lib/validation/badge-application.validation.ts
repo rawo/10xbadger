@@ -69,3 +69,36 @@ export const createBadgeApplicationSchema = z
  * Inferred TypeScript type for the create command
  */
 export type CreateBadgeApplicationCommand = z.infer<typeof createBadgeApplicationSchema>;
+
+/**
+ * Validation schema for PUT /api/badge-applications/:id (partial updates)
+ * Allows partial updates to application fields. Fields not present are left unchanged.
+ */
+export const updateBadgeApplicationSchema = z
+  .object({
+    catalog_badge_id: z.string().uuid("Invalid catalog badge ID format").optional(),
+    date_of_application: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Use YYYY-MM-DD")
+      .optional(),
+    date_of_fulfillment: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format. Use YYYY-MM-DD")
+      .optional(),
+    reason: z.string().max(2000, "Reason must be at most 2000 characters").optional(),
+    status: z.enum(["draft", "submitted", "accepted", "rejected", "used_in_promotion"]).optional(),
+    review_reason: z.string().max(2000).optional(),
+  })
+  .refine(
+    (data) => {
+      // If both dates are provided, fulfillment must be >= application
+      if (!data.date_of_fulfillment || !data.date_of_application) return true;
+      return data.date_of_fulfillment >= data.date_of_application;
+    },
+    {
+      message: "Date of fulfillment must be on or after date of application",
+      path: ["date_of_fulfillment"],
+    }
+  );
+
+export type UpdateBadgeApplicationCommand = z.infer<typeof updateBadgeApplicationSchema>;

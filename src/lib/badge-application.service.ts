@@ -12,6 +12,7 @@ import type {
 import type {
   ListBadgeApplicationsQuery,
   CreateBadgeApplicationCommand,
+  UpdateBadgeApplicationCommand,
 } from "./validation/badge-application.validation";
 
 /**
@@ -303,5 +304,125 @@ export class BadgeApplicationService {
     }
 
     return fullApplication;
+  }
+
+  /**
+   * Updates an existing badge application.
+   * - Enforces ownership rules: non-admins can only update their own drafts
+   * - Validates catalog badge when changed and captures its version
+   * - Validates date invariants and status transitions
+   */
+  async updateBadgeApplication(
+    id: string,
+    command: UpdateBadgeApplicationCommand,
+    userId: string,
+    isAdmin: boolean
+  ): Promise<BadgeApplicationDetailDto> {
+    // Fetch existing application
+    const { data: existing, error: fetchError } = await this.supabase
+      .from("badge_applications")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError) {
+      if (fetchError.code === "PGRST116") {
+        throw new Error("NOT_FOUND");
+      }
+      throw new Error(`Failed to fetch badge application: ${fetchError.message}`);
+    }
+
+    // Authorization: owners can edit drafts; admins can edit for review
+    if (!isAdmin && existing.applicant_id !== userId) {
+      throw new Error("FORBIDDEN");
+    }
+
+    if (!isAdmin && existing.status !== "draft") {
+      // Owners may only edit drafts
+      throw new Error("FORBIDDEN");
+    }
+
+    const updateData: Record<string, unknown> = {};
+
+    // Catalog badge change: validate existence and activity, capture version
+    if (command.catalog_badge_id) {
+      const { data: catalogBadge, error: catalogError } = await this.supabase
+        .from("catalog_badges")
+        .select("id, version, status")
+        .eq("id", command.catalog_badge_id)
+        .single();
+
+      if (catalogError) {
+        if (catalogError.code === "PGRST116") {
+          throw new Error("CATALOG_BADGE_NOT_FOUND");
+        }
+        throw new Error(`Failed to fetch catalog badge: ${catalogError.message}`);
+      }
+
+      if (catalogBadge.status !== "active") {
+        throw new Error("CATALOG_BADGE_INACTIVE");
+      }
+
+      updateData.catalog_badge_id = command.catalog_badge_id;
+      updateData.catalog_badge_version = catalogBadge.version;
+    }
+
+    // Dates and reason
+    if (command.date_of_application) updateData.date_of_application = command.date_of_application;
+    if (command.date_of_fulfillment) updateData.date_of_fulfillment = command.date_of_fulfillment;
+    if (command.reason !== undefined) updateData.reason = command.reason;
+
+    // Status transitions
+    if (command.status) {
+      const newStatus = command.status;
+      const currentStatus = existing.status;
+
+      // Owner can submit draft -> submitted
+      if (!isAdmin) {
+        if (currentStatus === "draft" && newStatus === "submitted") {
+          updateData.status = "submitted";
+          updateData.submitted_at = new Date().toISOString();
+        } else if (newStatus !== currentStatus) {
+          throw new Error("INVALID_STATUS_TRANSITION");
+        }
+      } else {
+        // Admin may perform review actions
+        if (newStatus === "accepted" || newStatus === "rejected") {
+          updateData.status = newStatus;
+          updateData.reviewed_by = userId;
+          updateData.reviewed_at = new Date().toISOString();
+          if (command.review_reason) updateData.review_reason = command.review_reason;
+        } else {
+          // allow admin to set other statuses too
+          updateData.status = newStatus;
+        }
+      }
+    }
+
+    // Additional validations
+    if (updateData.date_of_application && updateData.date_of_fulfillment) {
+      if ((updateData.date_of_fulfillment as string) < (updateData.date_of_application as string)) {
+        throw new Error("VALIDATION_ERROR");
+      }
+    }
+
+    // Prevent changing reviewer fields by non-admins via DB policy; earlier guard ensures this
+
+    // Execute update
+    const { error: updateError } = await this.supabase
+      .from("badge_applications")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(`Failed to update badge application: ${updateError.message}`);
+    }
+
+    // Return full details
+    const full = await this.getBadgeApplicationById(id);
+    if (!full) throw new Error("NOT_FOUND");
+    return full;
   }
 }
