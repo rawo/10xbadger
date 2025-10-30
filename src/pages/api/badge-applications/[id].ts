@@ -283,3 +283,71 @@ export const PUT: APIRoute = async (context) => {
     return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 };
+
+export const DELETE: APIRoute = async (context) => {
+  try {
+    // DEVELOPMENT MODE defaults
+    const isAdmin = false;
+    const userId = "550e8400-e29b-41d4-a716-446655440101";
+
+    // Validate path parameter
+    const id = context.params.id as string;
+    const idValidation = uuidParamSchema.safeParse({ id });
+    if (!idValidation.success) {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Invalid badge application ID format",
+        details: idValidation.error.issues.map((err) => ({ field: err.path.join("."), message: err.message })),
+      };
+      return new Response(JSON.stringify(error), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+
+    const service = new BadgeApplicationService(context.locals.supabase);
+
+    try {
+      const result = await service.deleteBadgeApplication(id, userId, isAdmin);
+      return new Response(JSON.stringify(result), { status: 200, headers: { "Content-Type": "application/json" } });
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message === "NOT_FOUND") {
+          const error: ApiError = { error: "not_found", message: "Badge application not found" };
+          return new Response(JSON.stringify(error), { status: 404, headers: { "Content-Type": "application/json" } });
+        }
+        if (err.message === "FORBIDDEN") {
+          const error: ApiError = {
+            error: "forbidden",
+            message: "You do not have permission to delete this badge application",
+          };
+          return new Response(JSON.stringify(error), { status: 403, headers: { "Content-Type": "application/json" } });
+        }
+        if (err.message === "REFERENCED_BY_PROMOTION") {
+          const apiError: ApiError = {
+            error: "conflict",
+            message: "Cannot delete: application is referenced by other resources",
+          };
+          return new Response(JSON.stringify(apiError), {
+            status: 409,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      }
+
+      // Unexpected
+      // eslint-disable-next-line no-console
+      console.error("Error in DELETE /api/badge-applications/:id:", err);
+      const apiError: ApiError = {
+        error: "internal_error",
+        message: "An unexpected error occurred while deleting the badge application",
+      };
+      return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Error in DELETE /api/badge-applications/:id:", error);
+    const apiError: ApiError = {
+      error: "internal_error",
+      message: "An unexpected error occurred while deleting the badge application",
+    };
+    return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
+};

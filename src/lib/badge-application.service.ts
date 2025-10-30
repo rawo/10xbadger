@@ -425,4 +425,67 @@ export class BadgeApplicationService {
     if (!full) throw new Error("NOT_FOUND");
     return full;
   }
+
+  /**
+   * Deletes a single badge application after performing ownership and reference checks.
+   * - Owners may delete their own draft applications
+   * - Admins may delete applications (subject to business rules)
+   * @throws Error with codes: NOT_FOUND, FORBIDDEN, REFERENCED_BY_PROMOTION, or generic on DB failures
+   */
+  async deleteBadgeApplication(id: string, requesterId?: string, isAdmin = false): Promise<{ id: string }> {
+    // Fetch minimal row for checks
+    const { data: row, error: fetchErr } = await this.supabase
+      .from("badge_applications")
+      .select("id, applicant_id, status")
+      .eq("id", id)
+      .single();
+
+    if (fetchErr) {
+      const fetchErrWithCode = fetchErr as { code?: string; message?: string };
+      if (fetchErrWithCode.code === "PGRST116") {
+        throw new Error("NOT_FOUND");
+      }
+      throw new Error(`Failed to fetch badge application: ${fetchErrWithCode.message ?? String(fetchErr)}`);
+    }
+
+    // Ownership/authorization checks
+    if (!isAdmin) {
+      if (!requesterId || row.applicant_id !== requesterId) {
+        throw new Error("FORBIDDEN");
+      }
+
+      // Owners may only delete drafts
+      if (row.status !== "draft") {
+        throw new Error("FORBIDDEN");
+      }
+    }
+
+    // Dependency checks: ensure not referenced by promotion submissions
+    const { data: refs, error: refsError } = await this.supabase
+      .from("promotion_submissions")
+      .select("id")
+      .eq("badge_application_id", id)
+      .limit(1);
+
+    if (refsError) {
+      throw new Error(`Failed to check references: ${refsError.message}`);
+    }
+
+    if (refs && (refs as unknown[]).length > 0) {
+      throw new Error("REFERENCED_BY_PROMOTION");
+    }
+
+    // Attempt delete
+    const { error: delError } = await this.supabase.from("badge_applications").delete().eq("id", id).single();
+
+    if (delError) {
+      const msg = delError.message || String(delError);
+      if (msg.toLowerCase().includes("foreign") || msg.toLowerCase().includes("constraint")) {
+        throw new Error("REFERENCED_BY_PROMOTION");
+      }
+      throw new Error(`Failed to delete badge application: ${delError.message}`);
+    }
+
+    return { id };
+  }
 }
