@@ -423,6 +423,36 @@ export class BadgeApplicationService {
     // Return full details
     const full = await this.getBadgeApplicationById(id);
     if (!full) throw new Error("NOT_FOUND");
+
+    // Best-effort: record audit log for submission
+    try {
+      await this.supabase.from("audit_logs").insert({
+        action: "submit_badge_application",
+        resource: "badge_applications",
+        resource_id: id,
+        requester_id: requesterId || null,
+        meta: { catalog_badge_id: row.catalog_badge_id },
+      });
+    } catch (e) {
+      // Do not block submission on audit failure
+      // eslint-disable-next-line no-console
+      console.error("Failed to write audit log for submitBadgeApplication:", e);
+    }
+
+    // Best-effort: enqueue async event for notifications/workers
+    try {
+      await this.supabase.from("events").insert({
+        type: "badge_application.submitted",
+        resource: "badge_applications",
+        resource_id: id,
+        payload: { id, action: "submitted" },
+      });
+    } catch (e) {
+      // best-effort
+      // eslint-disable-next-line no-console
+      console.error("Failed to enqueue event for submitBadgeApplication:", e);
+    }
+
     return full;
   }
 
@@ -487,5 +517,81 @@ export class BadgeApplicationService {
     }
 
     return { id };
+  }
+
+  /**
+   * Submit a badge application: validate preconditions and set status -> 'submitted'
+   * - Only owners may submit their own drafts; admins may submit per business rules
+   * - Validates catalog badge exists and is active and captures its version
+   */
+  async submitBadgeApplication(id: string, requesterId?: string, isAdmin = false): Promise<BadgeApplicationDetailDto> {
+    // Fetch minimal application row for checks
+    const { data: row, error: fetchErr } = await this.supabase
+      .from("badge_applications")
+      .select("id, applicant_id, status, catalog_badge_id, date_of_application, date_of_fulfillment, reason")
+      .eq("id", id)
+      .single();
+
+    if (fetchErr) {
+      const fetchErrWithCode = fetchErr as { code?: string; message?: string };
+      if (fetchErrWithCode.code === "PGRST116") throw new Error("NOT_FOUND");
+      throw new Error(`Failed to fetch badge application: ${fetchErrWithCode.message ?? String(fetchErr)}`);
+    }
+
+    // Authorization: owner or admin
+    if (!isAdmin) {
+      if (!requesterId || row.applicant_id !== requesterId) throw new Error("FORBIDDEN");
+    }
+
+    // Only allow submitting from 'draft'
+    if (row.status !== "draft") {
+      throw new Error("INVALID_STATUS_TRANSITION");
+    }
+
+    // Validate required fields for submission
+    if (!row.catalog_badge_id) {
+      throw new Error("VALIDATION_ERROR");
+    }
+
+    // Validate catalog badge exists and is active, capture version
+    const { data: catalogBadge, error: catalogError } = await this.supabase
+      .from("catalog_badges")
+      .select("id, version, status")
+      .eq("id", row.catalog_badge_id)
+      .single();
+
+    if (catalogError) {
+      if ((catalogError as { code?: string }).code === "PGRST116") throw new Error("CATALOG_BADGE_NOT_FOUND");
+      throw new Error(
+        `Failed to fetch catalog badge: ${(catalogError as { message?: string }).message ?? String(catalogError)}`
+      );
+    }
+
+    if (catalogBadge.status !== "active") {
+      throw new Error("CATALOG_BADGE_INACTIVE");
+    }
+
+    const updateData: Record<string, unknown> = {
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+      catalog_badge_version: catalogBadge.version,
+    };
+
+    // Execute update
+    const { error: updateError } = await this.supabase
+      .from("badge_applications")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error(`Failed to submit badge application: ${updateError.message}`);
+    }
+
+    // Return full details
+    const full = await this.getBadgeApplicationById(id);
+    if (!full) throw new Error("NOT_FOUND");
+    return full;
   }
 }
