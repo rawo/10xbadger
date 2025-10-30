@@ -9,7 +9,10 @@ import type {
   UserSummary,
   BadgeApplicationRow,
 } from "@/types";
-import type { ListBadgeApplicationsQuery } from "./validation/badge-application.validation";
+import type {
+  ListBadgeApplicationsQuery,
+  CreateBadgeApplicationCommand,
+} from "./validation/badge-application.validation";
 
 /**
  * Type for badge application query result with joined catalog badge (summary)
@@ -221,5 +224,84 @@ export class BadgeApplicationService {
       catalog_badge: typedData.catalog_badge,
       applicant: typedData.applicant,
     } as BadgeApplicationDetailDto;
+  }
+
+  /**
+   * Creates a new badge application in draft status
+   *
+   * This method:
+   * 1. Validates that the catalog badge exists and is active
+   * 2. Captures the catalog badge version for historical integrity
+   * 3. Creates the application in 'draft' status
+   * 4. Sets the applicant_id from the authenticated user
+   *
+   * @param command - The create command with badge application data
+   * @param userId - The authenticated user's ID (applicant)
+   * @returns The created badge application with full details
+   * @throws Error with specific message if catalog badge not found or inactive
+   * @throws Error if database insert fails
+   */
+  async createBadgeApplication(
+    command: CreateBadgeApplicationCommand,
+    userId: string
+  ): Promise<BadgeApplicationDetailDto> {
+    // =========================================================================
+    // Step 1: Validate Catalog Badge Exists and is Active
+    // =========================================================================
+    const { data: catalogBadge, error: catalogError } = await this.supabase
+      .from("catalog_badges")
+      .select("id, title, description, category, level, version, status")
+      .eq("id", command.catalog_badge_id)
+      .single();
+
+    if (catalogError) {
+      if (catalogError.code === "PGRST116") {
+        throw new Error("CATALOG_BADGE_NOT_FOUND");
+      }
+      throw new Error(`Failed to fetch catalog badge: ${catalogError.message}`);
+    }
+
+    // Check if catalog badge is active
+    if (catalogBadge.status !== "active") {
+      throw new Error("CATALOG_BADGE_INACTIVE");
+    }
+
+    // =========================================================================
+    // Step 2: Prepare Insert Data
+    // =========================================================================
+    const insertData = {
+      applicant_id: userId,
+      catalog_badge_id: command.catalog_badge_id,
+      catalog_badge_version: catalogBadge.version,
+      date_of_application: command.date_of_application,
+      date_of_fulfillment: command.date_of_fulfillment || null,
+      reason: command.reason || null,
+      status: "draft" as const,
+    };
+
+    // =========================================================================
+    // Step 3: Insert Badge Application
+    // =========================================================================
+    const { data: insertedData, error: insertError } = await this.supabase
+      .from("badge_applications")
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (insertError) {
+      throw new Error(`Failed to create badge application: ${insertError.message}`);
+    }
+
+    // =========================================================================
+    // Step 4: Fetch Full Details (with joins)
+    // =========================================================================
+    // Use the existing method to fetch the complete application with nested data
+    const fullApplication = await this.getBadgeApplicationById(insertedData.id);
+
+    if (!fullApplication) {
+      throw new Error("Failed to retrieve created badge application");
+    }
+
+    return fullApplication;
   }
 }
