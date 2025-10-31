@@ -15,54 +15,36 @@ export function createMockSupabase(options: {
     from(table: string) {
       const callerTable = table;
       return {
-        select(selectStr?: string) {
-          return {
-            eq(column: string, value: unknown) {
-              return {
-                async single(): Promise<SupabaseResult> {
-                  // Simulate fetch for badge_applications by id
-                  if (callerTable === "badge_applications") {
-                    const id = String(value);
-                    if (options.shouldFetchErrorForId === id) {
-                      return { error: { code: "PGRST116", message: "No rows" } };
-                    }
-
-                    // If select string includes nested joins, return detailed full object
-                    if (selectStr && selectStr.includes("catalog_badge")) {
-                      const row = badgeApplications[id];
-                      if (!row) return { error: { code: "PGRST116" } };
-                      return { data: row };
-                    }
-
-                    // Minimal select (id, status, catalog_badge_id)
-                    const row = badgeApplications[id] as Record<string, unknown> | undefined;
-                    if (!row) return { error: { code: "PGRST116" } };
-                    return {
-                      data: {
-                        id: String(row["id"]),
-                        status: String(row["status"]),
-                        catalog_badge_id: String(row["catalog_badge_id"]),
-                      },
-                    };
-                  }
-
-                  // default
-                  return { data: null };
-                },
-              };
-            },
+        select() {
+          const chain: Record<string, unknown> = {};
+          chain.eq = () => chain;
+          chain.order = () => chain;
+          chain.range = () => chain;
+          chain.limit = () => Promise.resolve({ data: [], error: null });
+          chain.single = async (): Promise<SupabaseResult> => {
+            // Simulate fetch for badge_applications by id
+            if (callerTable === "badge_applications") {
+              const keys = Object.keys(badgeApplications);
+              const id = keys.length > 0 ? keys[0] : undefined;
+              if (!id) return { error: { code: "PGRST116", message: "No rows" } };
+              const row = badgeApplications[id];
+              if (!row) return { error: { code: "PGRST116" } };
+              return { data: row };
+            }
+            return { data: null };
           };
+          return chain;
         },
         // Support update chain used in service: from(...).update(...).eq(...).select().single()
         update(updateData: unknown) {
           return {
-            eq(column: string, value: unknown) {
+            eq() {
               return {
                 select() {
                   return {
                     async single(): Promise<SupabaseResult> {
                       if (callerTable === "badge_applications") {
-                        const id = String(value);
+                        const id = Object.keys(badgeApplications)[0];
                         const existing = badgeApplications[id] as Record<string, unknown> | undefined;
                         if (!existing) return { error: { message: "no rows" } };
                         badgeApplications[id] = { ...existing, ...(updateData as Record<string, unknown>) };
@@ -76,9 +58,28 @@ export function createMockSupabase(options: {
             },
           };
         },
-        // Support insert used for audit_logs/events
+        // Support insert used for audit_logs/events and inserts that call .select().single()
         insert(payload: unknown) {
-          return { data: payload, error: null };
+          if (callerTable === "audit_logs") {
+            return Promise.resolve({ data: payload, error: null });
+          }
+          return {
+            select() {
+              return {
+                async single(): Promise<SupabaseResult> {
+                  return {
+                    data: {
+                      id: "test-uuid",
+                      ...((payload as unknown as Record<string, unknown>) || {}),
+                      created_at: new Date().toISOString(),
+                      updated_at: new Date().toISOString(),
+                    },
+                    error: null,
+                  };
+                },
+              };
+            },
+          };
         },
       };
     },

@@ -49,3 +49,42 @@ export const listPromotionTemplatesQuerySchema = z.object({
  * Inferred TypeScript type from the Zod schema
  */
 export type ListPromotionTemplatesQuery = z.infer<typeof listPromotionTemplatesQuerySchema>;
+
+/**
+ * Validation schema for POST /api/promotion-templates
+ */
+export const createPromotionTemplateSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(200)
+    .transform((s) => s.trim()),
+  path: z.enum(["technical", "financial", "management"]),
+  from_level: z.string().min(1, "from_level is required").max(20),
+  to_level: z.string().min(1, "to_level is required").max(20),
+  rules: z
+    .array(
+      z.object({
+        category: z.union([z.enum(["technical", "organizational", "softskilled"]), z.literal("any")]),
+        level: z.enum(["gold", "silver", "bronze"]),
+        count: z.coerce.number().int().min(1).max(100),
+      })
+    )
+    .min(1)
+    .max(50)
+    .refine(
+      (rules) => {
+        // No duplicate category+level pairs
+        const seen = new Set<string>();
+        for (const r of rules) {
+          const key = `${r.category}:${r.level}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+        }
+        return true;
+      },
+      { message: "Duplicate rule for category+level detected" }
+    ),
+});
+
+export type CreatePromotionTemplateBody = z.infer<typeof createPromotionTemplateSchema>;

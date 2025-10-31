@@ -1,7 +1,11 @@
 import type { APIRoute } from "astro";
-import { PromotionTemplateService } from "@/lib/promotion-template.service";
-import { listPromotionTemplatesQuerySchema } from "@/lib/validation/promotion-template.validation";
-import type { ApiError } from "@/types";
+import { PromotionTemplateService } from "../../../lib/promotion-template.service";
+import {
+  listPromotionTemplatesQuerySchema,
+  createPromotionTemplateSchema,
+} from "../../../lib/validation/promotion-template.validation";
+import type { ApiError } from "../../../types";
+import { logError } from "../../../lib/error-logger";
 
 /**
  * GET /api/promotion-templates
@@ -121,5 +125,84 @@ export const GET: APIRoute = async (context) => {
       status: 500,
       headers: { "Content-Type": "application/json" },
     });
+  }
+};
+
+/**
+ * POST /api/promotion-templates
+ *
+ * Creates a new promotion template. Authentication/authorization is disabled for development.
+ */
+export const POST: APIRoute = async (context) => {
+  try {
+    // Step 1: Parse request body
+    let body: unknown;
+    try {
+      body = await context.request.json();
+    } catch {
+      const apiError: ApiError = {
+        error: "validation_error",
+        message: "Invalid JSON in request body",
+      };
+      return new Response(JSON.stringify(apiError), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Step 2: Validate body
+    const validation = createPromotionTemplateSchema.safeParse(body);
+    if (!validation.success) {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Validation failed",
+        details: validation.error.issues.map((err) => ({ field: err.path.join("."), message: err.message })),
+      };
+      return new Response(JSON.stringify(error), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+
+    const command = validation.data;
+
+    // Development default created_by (sample user)
+    const createdBy = "550e8400-e29b-41d4-a716-446655440100";
+
+    // Step 3: Execute service
+    const service = new PromotionTemplateService(context.locals.supabase);
+    try {
+      // import type for command matching CreatePromotionTemplateCommand
+      // avoid `any` by asserting to the expected type from ../types
+      const created = await service.createPromotionTemplate(
+        command as unknown as import("../../../types").CreatePromotionTemplateCommand,
+        createdBy
+      );
+      return new Response(JSON.stringify(created), { status: 201, headers: { "Content-Type": "application/json" } });
+    } catch (err) {
+      const maybeErr = err as unknown as { code?: string; message?: string };
+      if (maybeErr.code === "conflict") {
+        const apiError: ApiError = { error: "conflict", message: maybeErr.message || "Conflict" };
+        return new Response(JSON.stringify(apiError), { status: 409, headers: { "Content-Type": "application/json" } });
+      }
+      // Unexpected error from service - log and return 500
+      await logError(context.locals.supabase, {
+        route: "/api/promotion-templates",
+        error_code: "create_failed",
+        message: maybeErr.message ?? String(err),
+        payload: { body: command },
+        requester_id: createdBy,
+      });
+      const apiError: ApiError = {
+        error: "internal_error",
+        message: "An unexpected error occurred while creating promotion template",
+      };
+      return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
+    }
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Error in POST /api/promotion-templates:", error);
+    const apiError: ApiError = {
+      error: "internal_error",
+      message: "An unexpected error occurred while creating the promotion template",
+    };
+    return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 };

@@ -3,11 +3,14 @@ import type {
   PromotionTemplateListItemDto,
   PromotionTemplateDetailDto,
   PromotionTemplateRow,
+  PromotionTemplateDto,
+  CreatePromotionTemplateCommand,
   PaginatedResponse,
   PaginationMetadata,
   PromotionTemplateRule,
-} from "@/types";
+} from "../types";
 import type { ListPromotionTemplatesQuery } from "./validation/promotion-template.validation";
+import { AuditEventType } from "../types";
 
 /**
  * Service class for promotion template operations
@@ -109,6 +112,87 @@ export class PromotionTemplateService {
     return {
       data: templates,
       pagination,
+    };
+  }
+
+  /**
+   * Creates a new promotion template
+   * @param command - CreatePromotionTemplateCommand
+   * @param actorId - optional actor performing the creation
+   * @returns created PromotionTemplateDto
+   */
+  async createPromotionTemplate(
+    command: CreatePromotionTemplateCommand,
+    actorId?: string
+  ): Promise<PromotionTemplateDto> {
+    // Optional uniqueness check: ensure there isn't an identical template
+    const { data: existing, error: existingError } = await this.supabase
+      .from("promotion_templates")
+      .select("id")
+      .eq("path", command.path)
+      .eq("from_level", command.from_level)
+      .eq("to_level", command.to_level)
+      .limit(1);
+
+    if (existingError) {
+      throw new Error(`Failed to check existing templates: ${existingError.message}`);
+    }
+
+    if (Array.isArray(existing) && existing.length > 0) {
+      const conflict = Object.assign(new Error("Promotion template already exists for path/from_level/to_level"), {
+        code: "conflict",
+      });
+      throw conflict as Error & { code: string };
+    }
+
+    // Insert template
+    const insertPayload = {
+      name: command.name,
+      path: command.path,
+      from_level: command.from_level,
+      to_level: command.to_level,
+      rules: command.rules as unknown as Json,
+      is_active: true,
+      created_by: actorId ?? null,
+    };
+
+    const { data, error } = await this.supabase.from("promotion_templates").insert(insertPayload).select().single();
+
+    if (error) {
+      throw new Error(`Failed to create promotion template: ${error.message}`);
+    }
+
+    // Best-effort audit log
+    try {
+      await this.supabase.from("audit_logs").insert({
+        event_type: AuditEventType.PromotionCreated,
+        actor_id: actorId ?? null,
+        payload: {
+          id: data.id,
+          name: data.name,
+          path: data.path,
+          from_level: data.from_level,
+          to_level: data.to_level,
+        },
+      });
+    } catch (e) {
+      // swallow audit errors - non-fatal
+      // eslint-disable-next-line no-console
+      console.error("Failed to write audit log for promotion template creation:", e);
+    }
+
+    // Return typed DTO
+    return {
+      id: data.id,
+      name: data.name,
+      path: data.path,
+      from_level: data.from_level,
+      to_level: data.to_level,
+      rules: data.rules as unknown as PromotionTemplateRule[],
+      is_active: data.is_active,
+      created_by: data.created_by,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
     };
   }
 
