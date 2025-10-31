@@ -5,6 +5,7 @@ import type {
   PromotionTemplateRow,
   PromotionTemplateDto,
   CreatePromotionTemplateCommand,
+  UpdatePromotionTemplateCommand,
   PaginatedResponse,
   PaginationMetadata,
   PromotionTemplateRule,
@@ -182,6 +183,77 @@ export class PromotionTemplateService {
     }
 
     // Return typed DTO
+    return {
+      id: data.id,
+      name: data.name,
+      path: data.path,
+      from_level: data.from_level,
+      to_level: data.to_level,
+      rules: data.rules as unknown as PromotionTemplateRule[],
+      is_active: data.is_active,
+      created_by: data.created_by,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
+  }
+
+  /**
+   * Updates an existing promotion template
+   * @param id - template uuid
+   * @param command - update command with partial fields
+   * @param actorId - optional actor performing the update
+   * @returns updated PromotionTemplateDto
+   * @throws Error with code 'not_found' when template does not exist
+   */
+  async updatePromotionTemplate(
+    id: string,
+    command: UpdatePromotionTemplateCommand,
+    actorId?: string
+  ): Promise<PromotionTemplateDto> {
+    // Ensure template exists
+    const { error: fetchError } = await this.supabase.from("promotion_templates").select("*").eq("id", id).single();
+
+    if (fetchError) {
+      // Map PostgREST 'no rows' behavior to not found
+      if ((fetchError as unknown as { code?: string }).code === "PGRST116") {
+        const notFound = Object.assign(new Error("Promotion template not found"), { code: "not_found" });
+        throw notFound as Error & { code: string };
+      }
+      throw new Error(`Failed to fetch promotion template: ${fetchError.message}`);
+    }
+
+    // Build update payload from provided fields
+    const updatePayload: Record<string, unknown> = {};
+    const cmd = command as unknown as Record<string, unknown>;
+    if (cmd.name !== undefined) updatePayload.name = cmd.name;
+    if (cmd.path !== undefined) updatePayload.path = cmd.path as string;
+    if (cmd.from_level !== undefined) updatePayload.from_level = cmd.from_level as string;
+    if (cmd.to_level !== undefined) updatePayload.to_level = cmd.to_level as string;
+    if (cmd.rules !== undefined) updatePayload.rules = cmd.rules as unknown as Json;
+    if (cmd.is_active !== undefined) updatePayload.is_active = cmd.is_active as boolean;
+
+    if (Object.keys(updatePayload).length === 0) {
+      const ve = Object.assign(new Error("No updatable fields provided"), { code: "validation" });
+      throw ve as Error & { code: string };
+    }
+
+    updatePayload.updated_at = new Date().toISOString();
+    updatePayload.updated_by = actorId ?? null;
+
+    const { data, error } = await this.supabase
+      .from("promotion_templates")
+      .update(updatePayload)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      const err = Object.assign(new Error(`Failed to update promotion template: ${error.message}`), {
+        code: "db_error",
+      });
+      throw err as Error & { code: string };
+    }
+
     return {
       id: data.id,
       name: data.name,

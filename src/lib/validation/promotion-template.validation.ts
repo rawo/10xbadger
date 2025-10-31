@@ -88,3 +88,35 @@ export const createPromotionTemplateSchema = z.object({
 });
 
 export type CreatePromotionTemplateBody = z.infer<typeof createPromotionTemplateSchema>;
+
+/**
+ * Validation schema for PUT /api/promotion-templates/:id (update)
+ * Accepts a partial set of fields; at least one updatable field must be present.
+ */
+export const updatePromotionTemplateSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .max(200)
+      .optional()
+      .transform((s) => (typeof s === "string" ? s.trim() : s)),
+    path: z.enum(["technical", "financial", "management"]).optional(),
+    from_level: z.string().min(1).max(20).optional(),
+    to_level: z.string().min(1).max(20).optional(),
+    rules: z
+      .array(
+        z.object({
+          category: z.union([z.enum(["technical", "organizational", "softskilled"]), z.literal("any")]),
+          level: z.enum(["gold", "silver", "bronze"]),
+          count: z.coerce.number().int().min(1).max(100),
+        })
+      )
+      .min(1)
+      .max(50)
+      .optional(),
+    is_active: z.boolean().optional(),
+  })
+  .refine((obj) => Object.keys(obj).length > 0, { message: "At least one field must be provided for update" });
+
+export type UpdatePromotionTemplateBody = z.infer<typeof updatePromotionTemplateSchema>;
