@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@/db/supabase.client";
 import type {
   PromotionTemplateListItemDto,
+  PromotionTemplateDetailDto,
   PromotionTemplateRow,
   PaginatedResponse,
   PaginationMetadata,
@@ -13,6 +14,7 @@ import type { ListPromotionTemplatesQuery } from "./validation/promotion-templat
  *
  * Handles business logic for promotion templates including:
  * - Listing templates with filters, sorting, and pagination
+ * - Fetching single template by ID
  * - JSONB rules field conversion to typed TypeScript array
  */
 export class PromotionTemplateService {
@@ -107,6 +109,40 @@ export class PromotionTemplateService {
     return {
       data: templates,
       pagination,
+    };
+  }
+
+  /**
+   * Retrieves a single promotion template by ID
+   *
+   * @param id - Template UUID
+   * @returns Promotion template if found, null otherwise
+   * @throws Error if database query fails
+   */
+  async getPromotionTemplateById(id: string): Promise<PromotionTemplateDetailDto | null> {
+    const { data, error } = await this.supabase.from("promotion_templates").select("*").eq("id", id).single();
+
+    if (error) {
+      // Handle "not found" vs actual errors
+      if (error.code === "PGRST116") {
+        // PostgREST error code for no rows returned
+        return null;
+      }
+      throw new Error(`Failed to fetch promotion template: ${error.message}`);
+    }
+
+    // Transform JSONB rules to typed array
+    return {
+      id: data.id,
+      name: data.name,
+      path: data.path,
+      from_level: data.from_level,
+      to_level: data.to_level,
+      rules: data.rules as unknown as PromotionTemplateRule[], // Type assertion for JSONB
+      is_active: data.is_active,
+      created_by: data.created_by,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
     };
   }
 }
