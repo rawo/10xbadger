@@ -333,4 +333,52 @@ export class PromotionService {
 
     return promotion as PromotionRow;
   }
+
+  /**
+   * Deletes a draft promotion
+   *
+   * Validates that the promotion exists, is in draft status, and belongs to the
+   * current user. Deletion cascades to promotion_badges, unlocking badge applications.
+   *
+   * @param promotionId - ID of promotion to delete
+   * @param userId - Current authenticated user ID (for ownership check)
+   * @throws Error if promotion not found, not draft, or not owned by user
+   */
+  async deletePromotion(promotionId: string, userId: string): Promise<void> {
+    // =========================================================================
+    // Step 1: Fetch Promotion and Validate
+    // =========================================================================
+    const { data: promotion, error: fetchError } = await this.supabase
+      .from("promotions")
+      .select("id, status, created_by")
+      .eq("id", promotionId)
+      .single();
+
+    // Handle promotion not found
+    if (fetchError || !promotion) {
+      throw new Error(`Promotion not found: ${promotionId}`);
+    }
+
+    // Handle status validation
+    if (promotion.status !== "draft") {
+      throw new Error(`Only draft promotions can be deleted. Current status: ${promotion.status}`);
+    }
+
+    // Handle ownership validation
+    if (promotion.created_by !== userId) {
+      throw new Error("You do not have permission to delete this promotion");
+    }
+
+    // =========================================================================
+    // Step 2: Delete Promotion (CASCADE to promotion_badges)
+    // =========================================================================
+    const { error: deleteError } = await this.supabase.from("promotions").delete().eq("id", promotionId);
+
+    if (deleteError) {
+      throw new Error(`Failed to delete promotion: ${deleteError.message}`);
+    }
+
+    // Cascade delete to promotion_badges happens automatically via ON DELETE CASCADE
+    // Badge applications are now unlocked and available for other promotions
+  }
 }
