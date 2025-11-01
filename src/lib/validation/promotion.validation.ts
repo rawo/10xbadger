@@ -1,6 +1,14 @@
 import { z } from "zod";
 
 /**
+ * Validation schema for UUID path parameter
+ * Reusable for any endpoint that requires a promotion ID
+ */
+export const promotionIdParamSchema = z.object({
+  id: z.string().uuid("Invalid promotion ID format"),
+});
+
+/**
  * Validation schema for GET /api/promotions query parameters
  *
  * All parameters are optional. Defaults are applied for sort, order, limit, and offset.

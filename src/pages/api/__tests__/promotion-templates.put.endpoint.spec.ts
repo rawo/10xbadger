@@ -74,19 +74,13 @@ describe("PUT /api/promotion-templates/:id", () => {
       headers: { "Content-Type": "application/json" },
     });
 
-    interface RouteContext {
-      request: Request;
-      params: Record<string, string>;
-      locals: { supabase: SupabaseClient };
-    }
-
     const context = {
       request: req,
       params: { id: "11111111-1111-4111-8111-111111111111" },
       locals: { supabase: createMockSupabase() },
-    } as unknown as any;
+    };
 
-    const res = await PUT(context as unknown as any);
+    const res = await PUT(context as never);
     if (res.status !== 200) {
       // Log response for debugging
       // eslint-disable-next-line no-console
@@ -110,9 +104,9 @@ describe("PUT /api/promotion-templates/:id", () => {
       request: req,
       params: { id: "11111111-1111-4111-8111-111111111111" },
       locals: { supabase: createMockSupabase() },
-    } as unknown as any;
+    };
 
-    const res = await PUT(context as unknown as any);
+    const res = await PUT(context as never);
     expect(res.status).toBe(400);
     const data = await res.json();
     expect(data).toHaveProperty("error", "validation_error");
