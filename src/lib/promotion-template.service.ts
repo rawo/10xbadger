@@ -12,6 +12,7 @@ import type {
 } from "../types";
 import type { ListPromotionTemplatesQuery } from "./validation/promotion-template.validation";
 import { AuditEventType } from "../types";
+import type { Json } from "@/db/database.types.ts";
 
 /**
  * Service class for promotion template operations
@@ -300,5 +301,39 @@ export class PromotionTemplateService {
       created_at: data.created_at,
       updated_at: data.updated_at,
     };
+  }
+
+  /**
+   * Deactivates a promotion template by setting is_active to false (soft delete)
+   *
+   * This is a soft delete operation that preserves template history and existing
+   * promotion references. Existing promotions using this template remain valid,
+   * but new promotions cannot use a deactivated template.
+   *
+   * @param id - Template UUID to deactivate
+   * @throws Error with message containing "not found" if template doesn't exist
+   * @throws Error if database query fails
+   */
+  async deactivatePromotionTemplate(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("promotion_templates")
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      // Handle "not found" vs actual errors
+      if (error.code === "PGRST116") {
+        // PostgREST error code for no rows returned
+        throw new Error("Promotion template not found");
+      }
+      throw new Error(`Failed to deactivate promotion template: ${error.message}`);
+    }
+
+    // Successful update means template was deactivated
   }
 }

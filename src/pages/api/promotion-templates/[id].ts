@@ -233,3 +233,158 @@ export const PUT: APIRoute = async (context) => {
     return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 };
+
+/**
+ * DELETE /api/promotion-templates/:id
+ *
+ * Deactivates a promotion template (soft delete).
+ * Sets is_active = false while preserving template history.
+ * Existing promotions using this template remain valid.
+ *
+ * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
+ * TODO: Re-enable authentication before production deployment
+ *
+ * Path Parameters:
+ * - id: Promotion template UUID (required)
+ *
+ * Development Mode Behavior:
+ * - No authentication required
+ * - No admin check performed
+ *
+ * Production Authorization (when enabled):
+ * - User must be authenticated
+ * - User must have admin role (is_admin = true)
+ *
+ * @returns 200 OK with success message
+ * @returns 400 Bad Request if UUID format is invalid
+ * @returns 401 Unauthorized if not authenticated (when auth enabled)
+ * @returns 403 Forbidden if not admin (when auth enabled)
+ * @returns 404 Not Found if template doesn't exist
+ * @returns 500 Internal Server Error on unexpected errors
+ */
+export const DELETE: APIRoute = async (context) => {
+  try {
+    // =========================================================================
+    // DEVELOPMENT MODE: Authentication Disabled
+    // =========================================================================
+    // TODO: Re-enable authentication before production deployment
+    // Authentication and authorization will be implemented later.
+
+    // =========================================================================
+    // PRODUCTION CODE (Currently Disabled)
+    // =========================================================================
+    // Uncomment the code below when authentication is ready:
+    /*
+    // Step 1: Authentication Check
+    const {
+      data: { user },
+      error: authError,
+    } = await context.locals.supabase.auth.getUser();
+
+    if (authError || !user) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "Authentication required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Step 2: Authorization Check (Admin Only)
+    // Fetch user's admin status from users table
+    const { data: userData, error: userError } = await context.locals.supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData || !userData.is_admin) {
+      const error: ApiError = {
+        error: "forbidden",
+        message: "Admin access required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    */
+
+    // =========================================================================
+    // Step 3: Validate Path Parameter
+    // =========================================================================
+    const validation = uuidParamSchema.safeParse(context.params);
+
+    if (!validation.success) {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Invalid template ID format",
+        details: validation.error.issues.map((err) => ({
+          field: err.path.join("."),
+          message: err.message,
+        })),
+      };
+      return new Response(JSON.stringify(error), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const { id } = validation.data;
+
+    // =========================================================================
+    // Step 4: Deactivate Template via Service
+    // =========================================================================
+    const service = new PromotionTemplateService(context.locals.supabase);
+
+    try {
+      await service.deactivatePromotionTemplate(id);
+    } catch (serviceError) {
+      // Check if error is "not found"
+      if (serviceError instanceof Error && serviceError.message.includes("not found")) {
+        const error: ApiError = {
+          error: "not_found",
+          message: "Promotion template not found",
+        };
+        return new Response(JSON.stringify(error), {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      // Re-throw other errors to be caught by outer catch
+      throw serviceError;
+    }
+
+    // =========================================================================
+    // Step 5: Return Success Response
+    // =========================================================================
+    return new Response(
+      JSON.stringify({
+        message: "Promotion template deactivated successfully",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    // =========================================================================
+    // Error Handling: Unexpected Errors
+    // =========================================================================
+    // Log error for debugging (server-side only)
+    // eslint-disable-next-line no-console
+    console.error("Error in DELETE /api/promotion-templates/:id:", error);
+
+    // Return generic error to client (don't expose internal details)
+    const apiError: ApiError = {
+      error: "internal_error",
+      message: "An unexpected error occurred while deactivating the promotion template",
+    };
+    return new Response(JSON.stringify(apiError), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
