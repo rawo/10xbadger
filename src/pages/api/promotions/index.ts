@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro";
 import { PromotionService } from "@/lib/promotion.service";
 import { listPromotionsQuerySchema } from "@/lib/validation/promotion.validation";
-import type { ApiError } from "@/types";
+import type { ApiError, CreatePromotionCommand } from "@/types";
+import { z } from "zod";
 
 /**
  * GET /api/promotions
@@ -136,6 +137,178 @@ export const GET: APIRoute = async (context) => {
     const apiError: ApiError = {
       error: "internal_error",
       message: "An unexpected error occurred while fetching promotions",
+    };
+    return new Response(JSON.stringify(apiError), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+};
+
+// =============================================================================
+// Request Body Validation Schema for POST
+// =============================================================================
+
+const createPromotionSchema = z.object({
+  template_id: z.string().uuid("Invalid template ID format"),
+});
+
+/**
+ * POST /api/promotions
+ *
+ * Creates a new promotion in draft status based on a promotion template.
+ * Associates the promotion with the authenticated user as creator.
+ *
+ * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
+ * TODO: Re-enable authentication before production deployment
+ *
+ * Request Body:
+ * - template_id: UUID of promotion template (required)
+ *
+ * Development Mode Behavior:
+ * - No authentication required
+ * - Uses first available user ID from database
+ *
+ * Production Authorization (when enabled):
+ * - Authenticated users can create promotions for themselves
+ * - created_by is forced to current user ID (cannot be overridden)
+ *
+ * @returns 201 Created with promotion object
+ * @returns 400 Bad Request if validation fails
+ * @returns 401 Unauthorized if not authenticated (when auth enabled)
+ * @returns 404 Not Found if template doesn't exist or is inactive
+ * @returns 500 Internal Server Error on unexpected errors
+ */
+export const POST: APIRoute = async (context) => {
+  try {
+    // =========================================================================
+    // DEVELOPMENT MODE: Authentication Disabled
+    // =========================================================================
+    // TODO: Re-enable authentication before production deployment
+    // Authentication will be implemented later. For now, we use a test user ID.
+
+    // =========================================================================
+    // PRODUCTION CODE (Currently Disabled)
+    // =========================================================================
+    // Uncomment the code below when authentication is ready:
+    /*
+    // Step 1: Authentication Check
+    const {
+      data: { user },
+      error: authError,
+    } = await context.locals.supabase.auth.getUser();
+
+    if (authError || !user) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "Authentication required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = user.id;
+    */
+
+    // Development mode: Use test user ID
+    // TODO: Replace with actual user ID from auth session
+    // For now, fetch first user from database for testing
+    const { data: testUser, error: userError } = await context.locals.supabase
+      .from("users")
+      .select("id")
+      .limit(1)
+      .single();
+
+    if (userError || !testUser) {
+      const error: ApiError = {
+        error: "internal_error",
+        message: "Test user not found. Please ensure sample data is imported.",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = testUser.id;
+
+    // =========================================================================
+    // Step 2: Parse and Validate Request Body
+    // =========================================================================
+    let requestBody: unknown;
+    try {
+      requestBody = await context.request.json();
+    } catch {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Request body is required and must be valid JSON",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const validation = createPromotionSchema.safeParse(requestBody);
+
+    if (!validation.success) {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Validation failed",
+        details: validation.error.issues.map((err) => ({
+          field: err.path.join("."),
+          message: err.message,
+        })),
+      };
+      return new Response(JSON.stringify(error), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const command: CreatePromotionCommand = validation.data;
+
+    // =========================================================================
+    // Step 3: Create Promotion via Service
+    // =========================================================================
+    const service = new PromotionService(context.locals.supabase);
+    const promotion = await service.createPromotion(command, userId);
+
+    // =========================================================================
+    // Step 4: Return Success Response
+    // =========================================================================
+    return new Response(JSON.stringify(promotion), {
+      status: 201,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    // =========================================================================
+    // Error Handling
+    // =========================================================================
+    // Log error for debugging (server-side only)
+    // eslint-disable-next-line no-console
+    console.error("Error in POST /api/promotions:", error);
+
+    // Handle template not found (service throws error with "not found" message)
+    if (error instanceof Error && error.message.includes("Template not found")) {
+      const apiError: ApiError = {
+        error: "not_found",
+        message: "Promotion template not found",
+      };
+      return new Response(JSON.stringify(apiError), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Return generic error to client (don't expose internal details)
+    const apiError: ApiError = {
+      error: "internal_error",
+      message: "Failed to create promotion",
     };
     return new Response(JSON.stringify(apiError), {
       status: 500,

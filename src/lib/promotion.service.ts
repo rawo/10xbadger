@@ -9,6 +9,8 @@ import type {
   BadgeApplicationStatusType,
   BadgeCategoryType,
   BadgeLevelType,
+  CreatePromotionCommand,
+  PromotionRow,
 } from "../types";
 import type { ListPromotionsQuery } from "./validation/promotion.validation";
 
@@ -271,5 +273,64 @@ export class PromotionService {
     };
 
     return promotion;
+  }
+
+  /**
+   * Creates a new promotion in draft status
+   *
+   * Validates that the template exists and is active, then creates a promotion
+   * record with template metadata copied for denormalized queries.
+   *
+   * @param command - Promotion creation command with template_id
+   * @param userId - Current authenticated user ID (promotion creator)
+   * @returns Created promotion with all fields
+   * @throws Error if template doesn't exist, is inactive, or database operation fails
+   */
+  async createPromotion(command: CreatePromotionCommand, userId: string): Promise<PromotionRow> {
+    // =========================================================================
+    // Step 1: Validate Template Exists and Is Active
+    // =========================================================================
+    const { data: template, error: templateError } = await this.supabase
+      .from("promotion_templates")
+      .select("id, path, from_level, to_level, is_active")
+      .eq("id", command.template_id)
+      .single();
+
+    // Handle template not found
+    if (templateError || !template) {
+      throw new Error(`Template not found: ${command.template_id}`);
+    }
+
+    // Handle template inactive (throw same error type for security)
+    if (!template.is_active) {
+      throw new Error(`Template not found: ${command.template_id}`);
+    }
+
+    // =========================================================================
+    // Step 2: Create Promotion Record
+    // =========================================================================
+    const { data: promotion, error: createError } = await this.supabase
+      .from("promotions")
+      .insert({
+        template_id: command.template_id,
+        created_by: userId,
+        path: template.path,
+        from_level: template.from_level,
+        to_level: template.to_level,
+        status: "draft",
+        executed: false,
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      throw new Error(`Failed to create promotion: ${createError.message}`);
+    }
+
+    if (!promotion) {
+      throw new Error("Promotion creation returned no data");
+    }
+
+    return promotion as PromotionRow;
   }
 }
