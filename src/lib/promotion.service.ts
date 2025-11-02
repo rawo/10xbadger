@@ -11,6 +11,7 @@ import type {
   BadgeLevelType,
   CreatePromotionCommand,
   PromotionRow,
+  AddPromotionBadgesCommand,
 } from "../types";
 import type { ListPromotionsQuery } from "./validation/promotion.validation";
 
@@ -380,5 +381,139 @@ export class PromotionService {
 
     // Cascade delete to promotion_badges happens automatically via ON DELETE CASCADE
     // Badge applications are now unlocked and available for other promotions
+  }
+
+  /**
+   * Adds badge applications to a promotion draft
+   *
+   * Validates promotion ownership, status, and badge application validity.
+   * Creates reservation records in promotion_badges junction table.
+   * Handles concurrent reservation conflicts with structured error.
+   *
+   * @param promotionId - Promotion UUID
+   * @param command - Badge application IDs to add
+   * @param userId - Current authenticated user ID
+   * @returns Success result with added count
+   * @throws Error with specific messages for different failure scenarios:
+   *   - "Promotion not found: {id}" - Promotion doesn't exist
+   *   - "User does not own promotion: {id}" - Not authorized
+   *   - "Promotion is not in draft status: {id} (current: {status})" - Wrong status
+   *   - "Badge application not found: {id}" - Badge doesn't exist
+   *   - "Badge application not accepted: {id}" - Badge not in accepted status
+   *   - "Badge already reserved: {badgeId} by promotion {promotionId}" - Conflict
+   */
+  async addBadgesToPromotion(
+    promotionId: string,
+    command: AddPromotionBadgesCommand,
+    userId: string
+  ): Promise<{ promotion_id: string; added_count: number; badge_application_ids: string[] }> {
+    // =========================================================================
+    // Step 1: Fetch and Validate Promotion
+    // =========================================================================
+    const { data: promotion, error: promotionError } = await this.supabase
+      .from("promotions")
+      .select("id, created_by, status")
+      .eq("id", promotionId)
+      .single();
+
+    if (promotionError || !promotion) {
+      throw new Error(`Promotion not found: ${promotionId}`);
+    }
+
+    // Validate ownership
+    if (promotion.created_by !== userId) {
+      throw new Error(`User does not own promotion: ${promotionId}`);
+    }
+
+    // Validate status
+    if (promotion.status !== "draft") {
+      throw new Error(`Promotion is not in draft status: ${promotionId} (current: ${promotion.status})`);
+    }
+
+    // =========================================================================
+    // Step 2: Validate All Badge Applications (Batch Query)
+    // =========================================================================
+    const { data: badgeApplications, error: badgeError } = await this.supabase
+      .from("badge_applications")
+      .select("id, status")
+      .in("id", command.badge_application_ids);
+
+    if (badgeError) {
+      throw new Error(`Failed to fetch badge applications: ${badgeError.message}`);
+    }
+
+    // Check all badges were found
+    if (!badgeApplications || badgeApplications.length !== command.badge_application_ids.length) {
+      const foundIds = badgeApplications?.map((ba) => ba.id) || [];
+      const missingIds = command.badge_application_ids.filter((id) => !foundIds.includes(id));
+      throw new Error(`Badge application not found: ${missingIds[0]}`);
+    }
+
+    // Check all badges are accepted
+    const notAcceptedBadge = badgeApplications.find((ba) => ba.status !== "accepted");
+    if (notAcceptedBadge) {
+      throw new Error(`Badge application not accepted: ${notAcceptedBadge.id}`);
+    }
+
+    // =========================================================================
+    // Step 3: Insert Promotion Badges (Batch Insert)
+    // =========================================================================
+    const promotionBadges = command.badge_application_ids.map((badgeAppId) => ({
+      promotion_id: promotionId,
+      badge_application_id: badgeAppId,
+      assigned_by: userId,
+      consumed: false,
+    }));
+
+    const { error: insertError } = await this.supabase.from("promotion_badges").insert(promotionBadges);
+
+    if (insertError) {
+      // =========================================================================
+      // Step 4: Handle Unique Constraint Violation (Reservation Conflict)
+      // =========================================================================
+      // Check for unique constraint violation (PostgreSQL error code 23505)
+      // This occurs when a badge is already reserved by another promotion
+      if (insertError.code === "23505") {
+        // Find which badge is conflicting by checking existing reservations
+        // We need to query to find the owning promotion
+        let conflictingBadgeId: string | null = null;
+        let owningPromotionId: string | null = null;
+
+        // Check each badge application to find which one is already reserved
+        for (const badgeAppId of command.badge_application_ids) {
+          const { data: existingReservation } = await this.supabase
+            .from("promotion_badges")
+            .select("promotion_id, badge_application_id")
+            .eq("badge_application_id", badgeAppId)
+            .eq("consumed", false)
+            .single();
+
+          if (existingReservation) {
+            conflictingBadgeId = badgeAppId;
+            owningPromotionId = existingReservation.promotion_id;
+            break;
+          }
+        }
+
+        if (conflictingBadgeId && owningPromotionId) {
+          throw new Error(`Badge already reserved: ${conflictingBadgeId} by promotion ${owningPromotionId}`);
+        }
+
+        // Fallback if we couldn't identify specific badge
+        throw new Error("Badge reservation conflict");
+      }
+
+      // Other database errors
+      throw new Error(`Failed to add badges to promotion: ${insertError.message}`);
+    }
+
+    // =========================================================================
+    // Step 5: Return Success Result
+    // =========================================================================
+    return {
+      promotion_id: promotionId,
+      added_count: command.badge_application_ids.length,
+      badge_application_ids: command.badge_application_ids,
+    };
   }
 }
