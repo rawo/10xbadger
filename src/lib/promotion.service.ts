@@ -12,6 +12,7 @@ import type {
   CreatePromotionCommand,
   PromotionRow,
   AddPromotionBadgesCommand,
+  RemovePromotionBadgesCommand,
 } from "../types";
 import type { ListPromotionsQuery } from "./validation/promotion.validation";
 
@@ -514,6 +515,109 @@ export class PromotionService {
       promotion_id: promotionId,
       added_count: command.badge_application_ids.length,
       badge_application_ids: command.badge_application_ids,
+    };
+  }
+
+  /**
+   * Removes badge applications from a promotion draft
+   *
+   * Validates promotion ownership, status, and badge assignment.
+   * Deletes reservation records from promotion_badges junction table.
+   * Optionally reverts badge application status to 'accepted'.
+   *
+   * @param promotionId - Promotion UUID
+   * @param command - Badge application IDs to remove
+   * @param userId - Current authenticated user ID
+   * @returns Success result with removed count
+   * @throws Error with specific messages for different failure scenarios:
+   *   - "Promotion not found: {id}" - Promotion doesn't exist
+   *   - "User does not own promotion: {id}" - Not authorized
+   *   - "Promotion is not in draft status: {id} (current: {status})" - Wrong status
+   *   - "Badge application not in promotion: {id} (promotion: {promotionId})" - Badge not assigned
+   */
+  async removeBadgesFromPromotion(
+    promotionId: string,
+    command: RemovePromotionBadgesCommand,
+    userId: string
+  ): Promise<{ removed_count: number }> {
+    // =========================================================================
+    // Step 1: Fetch and Validate Promotion
+    // =========================================================================
+    const { data: promotion, error: promotionError } = await this.supabase
+      .from("promotions")
+      .select("id, created_by, status")
+      .eq("id", promotionId)
+      .single();
+
+    if (promotionError || !promotion) {
+      throw new Error(`Promotion not found: ${promotionId}`);
+    }
+
+    // Validate ownership
+    if (promotion.created_by !== userId) {
+      throw new Error(`User does not own promotion: ${promotionId}`);
+    }
+
+    // Validate status
+    if (promotion.status !== "draft") {
+      throw new Error(`Promotion is not in draft status: ${promotionId} (current: ${promotion.status})`);
+    }
+
+    // =========================================================================
+    // Step 2: Verify All Badge Applications Are in Promotion (Batch Query)
+    // =========================================================================
+    const { data: currentBadges, error: verifyError } = await this.supabase
+      .from("promotion_badges")
+      .select("badge_application_id")
+      .eq("promotion_id", promotionId)
+      .in("badge_application_id", command.badge_application_ids);
+
+    if (verifyError) {
+      throw new Error(`Failed to verify badge assignments: ${verifyError.message}`);
+    }
+
+    // Check all requested badges are in the promotion
+    if (!currentBadges || currentBadges.length !== command.badge_application_ids.length) {
+      const foundIds = currentBadges?.map((b) => b.badge_application_id) || [];
+      const missingIds = command.badge_application_ids.filter((id) => !foundIds.includes(id));
+      throw new Error(`Badge application not in promotion: ${missingIds[0]} (promotion: ${promotionId})`);
+    }
+
+    // =========================================================================
+    // Step 3: Delete Promotion Badges Records (Batch Delete)
+    // =========================================================================
+    const { error: deleteError } = await this.supabase
+      .from("promotion_badges")
+      .delete()
+      .eq("promotion_id", promotionId)
+      .in("badge_application_id", command.badge_application_ids);
+
+    if (deleteError) {
+      throw new Error(`Failed to remove badges from promotion: ${deleteError.message}`);
+    }
+
+    // =========================================================================
+    // Step 4: (Optional) Revert Badge Application Status to 'accepted'
+    // =========================================================================
+    // This step is optional depending on business logic
+    // Uncomment if you want to revert status immediately
+    /*
+    const { error: updateError } = await this.supabase
+      .from("badge_applications")
+      .update({ status: "accepted" })
+      .in("id", command.badge_application_ids)
+      .eq("status", "used_in_promotion");
+
+    if (updateError) {
+      throw new Error(`Failed to update badge status: ${updateError.message}`);
+    }
+    */
+
+    // =========================================================================
+    // Step 5: Return Success Result
+    // =========================================================================
+    return {
+      removed_count: command.badge_application_ids.length,
     };
   }
 }
