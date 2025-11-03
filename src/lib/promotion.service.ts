@@ -13,6 +13,9 @@ import type {
   PromotionRow,
   AddPromotionBadgesCommand,
   RemovePromotionBadgesCommand,
+  PromotionValidationResponse,
+  PromotionRequirement,
+  MissingBadge,
 } from "../types";
 import type { ListPromotionsQuery } from "./validation/promotion.validation";
 
@@ -618,6 +621,169 @@ export class PromotionService {
     // =========================================================================
     return {
       removed_count: command.badge_application_ids.length,
+    };
+  }
+
+  /**
+   * Validates a promotion against its template requirements
+   *
+   * Counts badge applications in the promotion by category and level,
+   * then compares against template rules. Returns detailed validation
+   * result showing which requirements are satisfied and which are missing.
+   *
+   * Uses exact-match logic: gold ≠ silver ≠ bronze (no level equivalence)
+   * Handles "any" category rules that match badges of all categories
+   *
+   * @param promotionId - Promotion UUID to validate
+   * @param userId - Current user ID (for authorization)
+   * @param isAdmin - Whether current user is admin
+   * @returns Validation result if found and authorized, null otherwise
+   * @throws Error if database query fails
+   */
+  async validatePromotion(
+    promotionId: string,
+    userId?: string,
+    isAdmin = false
+  ): Promise<PromotionValidationResponse | null> {
+    // =========================================================================
+    // Step 1: Fetch Promotion with Template (Including Rules)
+    // =========================================================================
+    let query = this.supabase
+      .from("promotions")
+      .select(
+        `
+        id,
+        created_by,
+        promotion_templates!inner(
+          id,
+          rules
+        )
+      `
+      )
+      .eq("id", promotionId);
+
+    // Apply authorization filter for non-admin users
+    if (!isAdmin && userId) {
+      query = query.eq("created_by", userId);
+    }
+
+    const { data: promotion, error: promotionError } = await query.single();
+
+    // Handle not found or unauthorized
+    if (promotionError) {
+      if (promotionError.code === "PGRST116") {
+        return null;
+      }
+      throw new Error(`Failed to fetch promotion: ${promotionError.message}`);
+    }
+
+    if (!promotion) {
+      return null;
+    }
+
+    // Extract template rules with type casting
+    const templateRules = promotion.promotion_templates.rules as unknown as PromotionTemplateRule[];
+
+    // =========================================================================
+    // Step 2: Fetch Badge Applications in Promotion
+    // =========================================================================
+    const { data: badgeData, error: badgeError } = await this.supabase
+      .from("promotion_badges")
+      .select(
+        `
+        badge_applications!inner(
+          catalog_badges!inner(
+            category,
+            level
+          )
+        )
+      `
+      )
+      .eq("promotion_id", promotionId);
+
+    if (badgeError) {
+      throw new Error(`Failed to fetch badge applications: ${badgeError.message}`);
+    }
+
+    // =========================================================================
+    // Step 3: Count Badges by Category and Level
+    // =========================================================================
+    // Build map: { "category:level": count }
+    const badgeCounts = new Map<string, number>();
+
+    if (badgeData) {
+      for (const item of badgeData) {
+        const badge = item.badge_applications?.catalog_badges;
+        if (badge) {
+          const key = `${badge.category}:${badge.level}`;
+          badgeCounts.set(key, (badgeCounts.get(key) || 0) + 1);
+        }
+      }
+    }
+
+    // =========================================================================
+    // Step 4: Helper Function to Count Badges for a Rule
+    // =========================================================================
+    const countBadgesForRule = (rule: PromotionTemplateRule): number => {
+      if (rule.category === "any") {
+        // Sum all badges with matching level (any category)
+        let count = 0;
+        for (const [key, value] of badgeCounts) {
+          const [, level] = key.split(":");
+          if (level === rule.level) {
+            count += value;
+          }
+        }
+        return count;
+      } else {
+        // Count badges with matching category AND level
+        const key = `${rule.category}:${rule.level}`;
+        return badgeCounts.get(key) || 0;
+      }
+    };
+
+    // =========================================================================
+    // Step 5: Validate Against Template Rules
+    // =========================================================================
+    const requirements: PromotionRequirement[] = [];
+    const missing: MissingBadge[] = [];
+
+    for (const rule of templateRules) {
+      const currentCount = countBadgesForRule(rule);
+      const satisfied = currentCount >= rule.count;
+
+      // Build requirement object
+      requirements.push({
+        category: rule.category as BadgeCategoryType | "any",
+        level: rule.level,
+        required: rule.count,
+        current: currentCount,
+        satisfied,
+      });
+
+      // Add to missing list if not satisfied
+      if (!satisfied) {
+        missing.push({
+          category: rule.category as BadgeCategoryType | "any",
+          level: rule.level,
+          count: rule.count - currentCount,
+        });
+      }
+    }
+
+    // =========================================================================
+    // Step 6: Determine Overall Validity
+    // =========================================================================
+    const isValid = requirements.every((req) => req.satisfied);
+
+    // =========================================================================
+    // Step 7: Return Validation Result
+    // =========================================================================
+    return {
+      promotion_id: promotionId,
+      is_valid: isValid,
+      requirements,
+      missing,
     };
   }
 }
