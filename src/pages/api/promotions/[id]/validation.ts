@@ -59,7 +59,7 @@ export const GET: APIRoute = async (context) => {
   const validation = promotionIdSchema.safeParse({ id: context.params.id });
 
   if (!validation.success) {
-    const errorMessage = validation.error.errors[0]?.message || "Invalid promotion ID format";
+    const errorMessage = validation.error.issues[0]?.message || "Invalid promotion ID format";
     return new Response(
       JSON.stringify({
         error: "validation_error",

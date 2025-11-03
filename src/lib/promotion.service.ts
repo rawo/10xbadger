@@ -786,4 +786,117 @@ export class PromotionService {
       missing,
     };
   }
+
+  /**
+   * Submits a promotion for admin review
+   *
+   * Validates that promotion is in draft status, belongs to the user,
+   * and meets all template requirements. Upon successful validation,
+   * transitions promotion to submitted status and marks all badge
+   * applications as used.
+   *
+   * @param promotionId - Promotion UUID to submit
+   * @param userId - Current user ID (for authorization)
+   * @returns Updated promotion with submitted status
+   * @throws Error with specific messages for different failure scenarios:
+   *   - "Promotion not found: {id}" - Promotion doesn't exist
+   *   - "You do not have permission to submit this promotion" - Not creator
+   *   - "Only draft promotions can be submitted. Current status: {status}" - Wrong status
+   *   - "Validation failed: {missing}" - Template validation failed
+   */
+  async submitPromotion(promotionId: string, userId: string): Promise<PromotionRow> {
+    // =========================================================================
+    // Step 1: Fetch and Validate Promotion
+    // =========================================================================
+    const { data: promotion, error: promotionError } = await this.supabase
+      .from("promotions")
+      .select("id, created_by, status")
+      .eq("id", promotionId)
+      .single();
+
+    // Handle promotion not found
+    if (promotionError || !promotion) {
+      throw new Error(`Promotion not found: ${promotionId}`);
+    }
+
+    // Validate ownership
+    if (promotion.created_by !== userId) {
+      throw new Error("You do not have permission to submit this promotion");
+    }
+
+    // Validate status is draft
+    if (promotion.status !== "draft") {
+      throw new Error(`Only draft promotions can be submitted. Current status: ${promotion.status}`);
+    }
+
+    // =========================================================================
+    // Step 2: Run Template Validation
+    // =========================================================================
+    const validationResult = await this.validatePromotion(promotionId, userId, false);
+
+    if (!validationResult) {
+      throw new Error("Failed to validate promotion");
+    }
+
+    // Check if validation passes
+    if (!validationResult.is_valid) {
+      // Throw error with missing badges for 409 response
+      throw new Error(`Validation failed: ${JSON.stringify(validationResult.missing)}`);
+    }
+
+    // =========================================================================
+    // Step 3: Update Promotion (with race condition prevention)
+    // =========================================================================
+    const { data: updatedPromotion, error: updateError } = await this.supabase
+      .from("promotions")
+      .update({
+        status: "submitted",
+        submitted_at: new Date().toISOString(),
+      })
+      .eq("id", promotionId)
+      .eq("status", "draft") // Prevents race condition
+      .select()
+      .single();
+
+    if (updateError || !updatedPromotion) {
+      throw new Error("Failed to submit promotion (may have been already submitted)");
+    }
+
+    // =========================================================================
+    // Step 4: Update Badge Applications to 'used_in_promotion'
+    // =========================================================================
+    // Get all badge applications associated with this promotion
+    const { data: promotionBadges, error: badgesError } = await this.supabase
+      .from("promotion_badges")
+      .select("badge_application_id")
+      .eq("promotion_id", promotionId);
+
+    if (badgesError) {
+      // Non-critical error - log but don't fail
+      // Badge statuses can be updated later if needed
+      // eslint-disable-next-line no-console
+      console.warn("Failed to fetch promotion badges:", badgesError);
+    }
+
+    // Update badge application statuses if we have badges
+    if (promotionBadges && promotionBadges.length > 0) {
+      const badgeIds = promotionBadges.map((pb) => pb.badge_application_id);
+
+      const { error: badgeUpdateError } = await this.supabase
+        .from("badge_applications")
+        .update({ status: "used_in_promotion" })
+        .in("id", badgeIds);
+
+      if (badgeUpdateError) {
+        // Non-critical error - log but don't fail
+        // eslint-disable-next-line no-console
+        console.warn("Failed to update badge application statuses:", badgeUpdateError);
+      }
+    }
+
+    // =========================================================================
+    // Step 5: Return Updated Promotion
+    // =========================================================================
+    return updatedPromotion as PromotionRow;
+  }
 }
