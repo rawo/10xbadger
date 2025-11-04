@@ -2,6 +2,9 @@ Your task is to implement a REST API endpoint based on the provided implementati
 
 First, carefully review the provided implementation plan:
 
+<implementation_plan>
+@api-position-levels-get-implementation-plan.md
+</implementation_plan>
 
 <types>
 @types.ts

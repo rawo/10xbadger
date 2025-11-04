@@ -4,7 +4,7 @@ Before we begin, review the following information:
 
 1. Route API specification:
    <route_api_specification>
-   `POST /api/catalog-badges` from @api-plan.md
+   `GET /api/position-levels` from @api-plan.md
    </route_api_specification>
 
 2. Related database resources:
@@ -105,4 +105,4 @@ The final output should be a well-organized implementation plan in markdown form
 
 The final output should consist solely of the implementation plan in markdown format and should not duplicate or repeat any work done in the analysis section.
 
-Remember to save your implementation plan as .ai/api-catalog-badges-post-one-impl-plan.md. Ensure the plan is detailed, clear, and provides comprehensive guidance for the development team.
+Remember to save your implementation plan as .ai/api-position-levels-get-implementation-plan.md. Ensure the plan is detailed, clear, and provides comprehensive guidance for the development team.
