@@ -865,6 +865,116 @@ export class PromotionService {
   }
 
   /**
+   * Rejects a submitted promotion (admin only)
+   *
+   * Validates that promotion exists and is in submitted status, then transitions
+   * to rejected status. Records rejection metadata, unlocks badge reservations by
+   * deleting promotion_badges records, and reverts badge application statuses
+   * to 'accepted' so they can be reused.
+   *
+   * @param promotionId - Promotion UUID to reject
+   * @param adminUserId - Admin user ID performing the rejection
+   * @param rejectReason - Explanation for why the promotion was rejected
+   * @returns Updated promotion with rejected status and rejection metadata
+   * @throws Error with specific messages for different failure scenarios:
+   *   - "Promotion not found: {id}" - Promotion doesn't exist
+   *   - "Only submitted promotions can be rejected. Current status: {status}" - Wrong status
+   *   - "Failed to reject promotion (may have been already processed)" - Update failed (race condition)
+   */
+  async rejectPromotion(promotionId: string, adminUserId: string, rejectReason: string): Promise<PromotionRow> {
+    // =========================================================================
+    // Step 1: Fetch and Validate Promotion
+    // =========================================================================
+    const { data: promotion, error: fetchError } = await this.supabase
+      .from("promotions")
+      .select("id, status")
+      .eq("id", promotionId)
+      .single();
+
+    if (fetchError || !promotion) {
+      throw new Error(`Promotion not found: ${promotionId}`);
+    }
+
+    if (promotion.status !== "submitted") {
+      throw new Error(`Only submitted promotions can be rejected. Current status: ${promotion.status}`);
+    }
+
+    // =========================================================================
+    // Step 2: Update Promotion (with race condition prevention)
+    // =========================================================================
+    const { data: updatedPromotion, error: updateError } = await this.supabase
+      .from("promotions")
+      .update({
+        status: "rejected",
+        rejected_by: adminUserId,
+        rejected_at: new Date().toISOString(),
+        reject_reason: rejectReason,
+      })
+      .eq("id", promotionId)
+      .eq("status", "submitted") // Prevents race condition
+      .select()
+      .single();
+
+    if (updateError || !updatedPromotion) {
+      throw new Error("Failed to reject promotion (may have been already processed)");
+    }
+
+    // =========================================================================
+    // Step 3: Get Badge Application IDs from Promotion Badges
+    // =========================================================================
+    const { data: promotionBadges, error: badgesError } = await this.supabase
+      .from("promotion_badges")
+      .select("badge_application_id")
+      .eq("promotion_id", promotionId);
+
+    if (badgesError) {
+      // Non-critical: Log but don't fail
+      // eslint-disable-next-line no-console
+      console.warn("Failed to fetch promotion badges:", badgesError);
+    }
+
+    const badgeApplicationIds = promotionBadges?.map((pb) => pb.badge_application_id) || [];
+
+    // =========================================================================
+    // Step 4: Delete Promotion Badges Records (Unlocks Badge Reservations)
+    // =========================================================================
+    const { error: deleteError } = await this.supabase
+      .from("promotion_badges")
+      .delete()
+      .eq("promotion_id", promotionId);
+
+    if (deleteError) {
+      // Non-critical: Log but don't fail
+      // Badge unlocking can be fixed manually if needed
+      // eslint-disable-next-line no-console
+      console.warn("Failed to delete promotion badges:", deleteError);
+    }
+
+    // =========================================================================
+    // Step 5: Revert Badge Application Statuses to 'accepted'
+    // =========================================================================
+    if (badgeApplicationIds.length > 0) {
+      const { error: revertError } = await this.supabase
+        .from("badge_applications")
+        .update({ status: "accepted" })
+        .in("id", badgeApplicationIds)
+        .eq("status", "used_in_promotion");
+
+      if (revertError) {
+        // Non-critical: Log but don't fail
+        // Badge statuses can be fixed manually if needed
+        // eslint-disable-next-line no-console
+        console.warn("Failed to revert badge application statuses:", revertError);
+      }
+    }
+
+    // =========================================================================
+    // Step 6: Return Updated Promotion
+    // =========================================================================
+    return updatedPromotion as PromotionRow;
+  }
+
+  /**
    * Submits a promotion for admin review
    *
    * Validates that promotion is in draft status, belongs to the user,
