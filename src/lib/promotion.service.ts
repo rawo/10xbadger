@@ -788,6 +788,83 @@ export class PromotionService {
   }
 
   /**
+   * Approves a submitted promotion (admin only)
+   *
+   * Validates that promotion exists and is in submitted status, then transitions
+   * to approved status. Records approval metadata and marks all badge applications
+   * as permanently consumed. In MVP, approval implies execution.
+   *
+   * @param promotionId - Promotion UUID to approve
+   * @param adminUserId - Admin user ID performing the approval
+   * @returns Updated promotion with approved status and approval metadata
+   * @throws Error with specific messages for different failure scenarios:
+   *   - "Promotion not found: {id}" - Promotion doesn't exist
+   *   - "Only submitted promotions can be approved. Current status: {status}" - Wrong status
+   *   - "Failed to approve promotion (may have been already processed)" - Update failed (race condition)
+   */
+  async approvePromotion(promotionId: string, adminUserId: string): Promise<PromotionRow> {
+    // =========================================================================
+    // Step 1: Fetch and Validate Promotion
+    // =========================================================================
+    const { data: promotion, error: fetchError } = await this.supabase
+      .from("promotions")
+      .select("id, status")
+      .eq("id", promotionId)
+      .single();
+
+    if (fetchError || !promotion) {
+      throw new Error(`Promotion not found: ${promotionId}`);
+    }
+
+    if (promotion.status !== "submitted") {
+      throw new Error(`Only submitted promotions can be approved. Current status: ${promotion.status}`);
+    }
+
+    // =========================================================================
+    // Step 2: Update Promotion (with race condition prevention)
+    // =========================================================================
+    const { data: updatedPromotion, error: updateError } = await this.supabase
+      .from("promotions")
+      .update({
+        status: "approved",
+        approved_by: adminUserId,
+        approved_at: new Date().toISOString(),
+        executed: true,
+      })
+      .eq("id", promotionId)
+      .eq("status", "submitted") // Prevents race condition
+      .select()
+      .single();
+
+    if (updateError || !updatedPromotion) {
+      throw new Error("Failed to approve promotion (may have been already processed)");
+    }
+
+    // =========================================================================
+    // Step 3: Update Promotion Badges to Consumed
+    // =========================================================================
+    const { data: badgeUpdateData, error: badgesError } = await this.supabase
+      .from("promotion_badges")
+      .update({ consumed: true })
+      .eq("promotion_id", promotionId);
+
+    if (badgesError) {
+      // Non-critical: Log but don't fail
+      // Badge consumption can be fixed manually if needed
+      // eslint-disable-next-line no-console
+      console.warn("Failed to mark badges as consumed:", badgesError);
+    } else {
+      // eslint-disable-next-line no-console
+      console.log(`Badge update completed. Data:`, badgeUpdateData);
+    }
+
+    // =========================================================================
+    // Step 4: Return Updated Promotion
+    // =========================================================================
+    return updatedPromotion as PromotionRow;
+  }
+
+  /**
    * Submits a promotion for admin review
    *
    * Validates that promotion is in draft status, belongs to the user,
