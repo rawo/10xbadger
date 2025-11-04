@@ -1,0 +1,137 @@
+{
+  "positions": {
+    "technical": {
+      "J1": {
+        "next_level": "J2",
+        "required_badges": {
+          "technical": [
+            { "level": "bronze", "count": 3 }
+          ]
+        }
+      },
+      "J2": {
+        "next_level": "S1",
+        "required_badges": {
+          "technical": [
+            { "level": "silver", "count": 4 }
+          ],
+          "organizational": [
+            { "level": "bronze", "count": 2 }
+          ]
+        }
+      },
+      "S1": {
+        "next_level": "S2",
+        "required_badges": {
+          "technical": [
+            { "level": "silver", "count": 6 }
+          ],
+          "any": [
+            { "level": "gold", "count": 1 }
+          ]
+        }
+      },
+      "S2": {
+        "next_level": "S3",
+        "required_badges": {
+          "technical": [
+            { "level": "gold", "count": 2 }
+          ],
+          "any": [
+            { "level": "silver", "count": 8 }
+          ]
+        }
+      },
+      "S3": {
+        "required_badges": {
+          "technical": [
+            { "level": "gold", "count": 4 }
+          ],
+          "any": [
+            { "level": "gold", "count": 2 }
+          ]
+        }
+      }
+    },
+    "financial": {
+      "J1": {
+        "next_level": "J2",
+        "required_badges": {
+          "organizational": [
+            { "level": "bronze", "count": 3 }
+          ]
+        }
+      },
+      "J2": {
+        "next_level": "S1",
+        "required_badges": {
+          "organizational": [
+            { "level": "silver", "count": 4 }
+          ],
+          "technical": [
+            { "level": "bronze", "count": 2 }
+          ]
+        }
+      },
+      "S1": {
+        "next_level": "S2",
+        "required_badges": {
+          "organizational": [
+            { "level": "silver", "count": 6 }
+          ],
+          "any": [
+            { "level": "gold", "count": 1 }
+          ]
+        }
+      },
+      "S2": {
+        "required_badges": {
+          "organizational": [
+            { "level": "gold", "count": 2 }
+          ],
+          "any": [
+            { "level": "silver", "count": 8 }
+          ]
+        }
+      }
+    },
+    "management": {
+      "M1": {
+        "next_level": "M2",
+        "required_badges": {
+          "softskilled": [
+            { "level": "silver", "count": 4 }
+          ],
+          "organizational": [
+            { "level": "bronze", "count": 2 }
+          ]
+        }
+      },
+      "M2": {
+        "next_level": "M3",
+        "required_badges": {
+          "softskilled": [
+            { "level": "gold", "count": 1 }
+          ],
+          "organizational": [
+            { "level": "silver", "count": 3 }
+          ]
+        }
+      },
+      "M3": {
+        "required_badges": {
+          "softskilled": [
+            { "level": "gold", "count": 2 }
+          ],
+          "organizational": [
+            { "level": "gold", "count": 2 }
+          ],
+          "any": [
+            { "level": "silver", "count": 5 }
+          ]
+        }
+      }
+    }
+  }
+}
+
