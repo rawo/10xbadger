@@ -9,7 +9,7 @@
 - View name: Dashboard (Home)
   - View path: `/`
   - Main purpose: Provide quick entry points and high-level counts (my apps, pending reviews, templates)
-  - Key information to display: resource counts, recent activity, quick links to Catalog, Applications, Admin Review, Templates
+  - Key information to display: my badges pending reviews, my badges in draft, my badges approved, quick links to Catalog, Applications, Admin Review, Templates
   - Key view components: Overview cards, small activity feed, quick action buttons
   - UX/accessibility/security: Keyboard-accessible shortcuts, clear aria labels for cards; no admin-only controls unless user is admin
 

@@ -541,3 +541,70 @@ export const AuditEventType = {
 } as const;
 
 export type AuditEventTypeType = (typeof AuditEventType)[keyof typeof AuditEventType];
+
+// =============================================================================
+// Dashboard View Types
+// =============================================================================
+
+/**
+ * Dashboard statistics aggregated from badge applications and promotions
+ */
+export interface DashboardStatistics {
+  draftApplicationsCount: number;
+  submittedApplicationsCount: number;
+  acceptedBadgesCount: number;
+  rejectedApplicationsCount: number;
+  draftPromotionsCount: number;
+  submittedPromotionsCount: number;
+  approvedPromotionsCount: number;
+  rejectedPromotionsCount: number;
+}
+
+/**
+ * Dashboard view model containing all data for the dashboard page
+ */
+export interface DashboardViewModel {
+  badgeApplications: {
+    draft: BadgeApplicationListItemDto[];
+    submitted: BadgeApplicationListItemDto[];
+    accepted: BadgeApplicationListItemDto[];
+    rejected: BadgeApplicationListItemDto[];
+  };
+  promotions: {
+    draft: PromotionListItemDto[];
+    submitted: PromotionListItemDto[];
+    approved: PromotionListItemDto[];
+    rejected: PromotionListItemDto[];
+  };
+  statistics: DashboardStatistics;
+}
+
+/**
+ * Props for StatCard component
+ */
+export interface StatCardProps {
+  label: string;
+  value: number;
+  icon?: React.ReactNode;
+  link?: string;
+  variant?: "default" | "success" | "warning" | "error";
+  className?: string;
+}
+
+/**
+ * Quick action item for dashboard navigation
+ */
+export interface QuickActionItem {
+  label: string;
+  href: string;
+  icon?: React.ReactNode;
+  variant?: "default" | "primary" | "secondary";
+}
+
+/**
+ * Props for DashboardView component
+ */
+export interface DashboardViewProps {
+  initialData: DashboardViewModel;
+  userId: string;
+}
