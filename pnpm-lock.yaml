@@ -56,9 +56,6 @@ importers:
       tailwindcss:
         specifier: ^4.1.14
         version: 4.1.14
-      tw-animate-css:
-        specifier: ^1.4.0
-        version: 1.4.0
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -120,6 +117,9 @@ importers:
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@24.9.2)(typescript@5.8.3)
+      tw-animate-css:
+        specifier: ^1.4.0
+        version: 1.4.0
       typescript-eslint:
         specifier: 8.28.0
         version: 8.28.0(eslint@9.23.0(jiti@2.6.1))(typescript@5.8.3)
