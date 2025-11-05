@@ -2,8 +2,11 @@ import React from "react";
 import type { DashboardViewProps } from "@/types";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { StatisticsGrid } from "./StatisticsGrid";
+import { QuickActions } from "./QuickActions";
 import { BadgeApplicationsOverview } from "./BadgeApplicationsOverview";
 import { PromotionsOverview } from "./PromotionsOverview";
+import { DashboardSkeleton } from "./DashboardSkeleton";
+import { toast } from "sonner";
 
 /**
  * DashboardView Component
@@ -21,10 +24,15 @@ import { PromotionsOverview } from "./PromotionsOverview";
 export function DashboardView({ initialData, userId }: DashboardViewProps) {
   const { data, isRefreshing, error, refetch } = useDashboardData(userId, initialData);
 
+  // Show skeleton during refresh
+  if (isRefreshing && !data) {
+    return <DashboardSkeleton />;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Your Dashboard</h2>
           <p className="text-sm text-muted-foreground">
@@ -34,7 +42,7 @@ export function DashboardView({ initialData, userId }: DashboardViewProps) {
         <button
           onClick={refetch}
           disabled={isRefreshing}
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 h-10 px-4 py-2"
         >
           {isRefreshing ? (
             <>
@@ -105,14 +113,30 @@ export function DashboardView({ initialData, userId }: DashboardViewProps) {
         </div>
       )}
 
-      {/* Statistics Grid */}
-      <StatisticsGrid statistics={data.statistics} />
+      {/* Content with opacity transition during refresh */}
+      <div className={isRefreshing ? "opacity-50 pointer-events-none transition-opacity duration-200" : "opacity-100 transition-opacity duration-200"}>
+        {/* Quick Actions */}
+        <div className="animate-in slide-in-from-bottom-4 duration-500 delay-100">
+          <QuickActions />
+        </div>
 
-      {/* Badge Applications Overview */}
-      <BadgeApplicationsOverview applications={data.badgeApplications} />
+        <div className="mt-6 space-y-6">
+          {/* Statistics Grid */}
+          <div className="animate-in slide-in-from-bottom-4 duration-500 delay-200">
+            <StatisticsGrid statistics={data.statistics} />
+          </div>
 
-      {/* Promotions Overview */}
-      <PromotionsOverview promotions={data.promotions} />
+          {/* Badge Applications Overview */}
+          <div className="animate-in slide-in-from-bottom-4 duration-500 delay-300">
+            <BadgeApplicationsOverview applications={data.badgeApplications} />
+          </div>
+
+          {/* Promotions Overview */}
+          <div className="animate-in slide-in-from-bottom-4 duration-500 delay-[400ms]">
+            <PromotionsOverview promotions={data.promotions} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

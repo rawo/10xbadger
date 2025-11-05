@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { toast } from "sonner";
 import type {
   DashboardViewModel,
   DashboardStatistics,
@@ -118,10 +119,14 @@ export function useDashboardData(userId: string, initialData: DashboardViewModel
       };
 
       setData(newData);
+      toast.success("Dashboard refreshed successfully");
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Failed to refresh dashboard data");
       setError(error);
       console.error("Error refreshing dashboard:", error);
+      toast.error("Failed to refresh dashboard", {
+        description: error.message,
+      });
     } finally {
       setIsRefreshing(false);
     }

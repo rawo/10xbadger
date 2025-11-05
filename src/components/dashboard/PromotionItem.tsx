@@ -106,9 +106,9 @@ export function PromotionItem({ promotion, onNavigate, className }: PromotionIte
     <button
       onClick={handleClick}
       className={cn(
-        "w-full text-left p-3 border rounded-md hover:bg-accent/50 transition-all duration-200",
+        "w-full text-left p-3 border rounded-md hover:bg-accent/50 transition-all duration-300",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        "hover:shadow-sm hover:border-primary/30",
+        "hover:shadow-md hover:border-primary/30 hover:scale-[1.01] active:scale-[0.99]",
         className
       )}
     >

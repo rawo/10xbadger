@@ -58,13 +58,13 @@ export function StatCard({ label, value, icon, link, variant = "default", classN
       <a
         href={link}
         className={cn(
-          "block transition-all duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg",
+          "block transition-all duration-300 hover:scale-105 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg active:scale-95",
           className
         )}
       >
         <Card
           className={cn(
-            "h-full cursor-pointer transition-all duration-200",
+            "h-full cursor-pointer transition-all duration-300 hover:shadow-md",
             variantStyles[variant]
           )}
         >
