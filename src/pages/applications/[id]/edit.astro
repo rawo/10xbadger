@@ -1,0 +1,214 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { ApplicationEditor } from "@/components/badge-applications/ApplicationEditor";
+import type { BadgeApplicationDetailDto, CatalogBadgeDetailDto, ApiError } from "@/types";
+
+/**
+ * Edit Badge Application Page
+ *
+ * Server-side rendered page for editing an existing draft badge application.
+ * Validates ownership and ensures application is in draft status.
+ *
+ * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
+ * TODO: Re-enable authentication before production deployment
+ */
+
+// =========================================================================
+// DEVELOPMENT MODE: Authentication Disabled
+// =========================================================================
+// TODO: Re-enable authentication before production deployment
+
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
+
+// =========================================================================
+// PRODUCTION CODE (Currently Disabled)
+// =========================================================================
+// Uncomment the code below when authentication is ready:
+/*
+const supabase = Astro.locals.supabase;
+
+// Check authentication
+const { data: { user }, error: authError } = await supabase.auth.getUser();
+if (authError || !user) {
+  return Astro.redirect('/login?return=' + encodeURIComponent(Astro.url.pathname));
+}
+
+const userId = user.id;
+*/
+
+// =========================================================================
+// Validate Path Parameters
+// =========================================================================
+
+const { id } = Astro.params;
+
+if (!id) {
+  // Missing ID parameter - redirect to applications list
+  return Astro.redirect("/applications");
+}
+
+// Basic UUID validation
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!uuidRegex.test(id)) {
+  // Invalid UUID format - redirect to applications list
+  return Astro.redirect("/applications");
+}
+
+// =========================================================================
+// Fetch Badge Application Data
+// =========================================================================
+
+const baseUrl = Astro.url.origin;
+let badgeApplication: BadgeApplicationDetailDto | null = null;
+let catalogBadge: CatalogBadgeDetailDto | null = null;
+let error: string | null = null;
+
+try {
+  // Fetch badge application with full details
+  const applicationResponse = await fetch(`${baseUrl}/api/badge-applications/${id}`, {
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  if (applicationResponse.status === 404) {
+    // Application not found - redirect to list
+    return Astro.redirect("/applications?error=" + encodeURIComponent("Badge application not found"));
+  } else if (applicationResponse.status === 401) {
+    // Unauthorized - redirect to login
+    return Astro.redirect("/login?return=" + encodeURIComponent(Astro.url.pathname));
+  } else if (applicationResponse.status === 403) {
+    // Forbidden (not owner) - redirect to list
+    return Astro.redirect(
+      "/applications?error=" + encodeURIComponent("You do not have permission to edit this application")
+    );
+  } else if (!applicationResponse.ok) {
+    const apiError: ApiError = await applicationResponse.json();
+    error = apiError.message || "Failed to fetch badge application";
+  } else {
+    badgeApplication = await applicationResponse.json();
+  }
+} catch (e) {
+  console.error("Error fetching badge application:", e);
+  error = "Failed to load badge application data";
+}
+
+// =========================================================================
+// Validate Application Status and Ownership
+// =========================================================================
+
+if (badgeApplication) {
+  // Validate ownership (in production, this is also enforced by API)
+  if (badgeApplication.applicant_id !== userId) {
+    return Astro.redirect(
+      "/applications?error=" + encodeURIComponent("You do not have permission to edit this application")
+    );
+  }
+
+  // Validate status - can only edit drafts
+  if (badgeApplication.status !== "draft") {
+    // Not a draft - redirect to detail view instead
+    return Astro.redirect(`/applications/${id}?error=` + encodeURIComponent("Only draft applications can be edited"));
+  }
+
+  // Fetch catalog badge details
+  try {
+    const catalogResponse = await fetch(`${baseUrl}/api/catalog-badges/${badgeApplication.catalog_badge_id}`, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (catalogResponse.ok) {
+      catalogBadge = await catalogResponse.json();
+    } else {
+      console.error("Failed to fetch catalog badge:", catalogResponse.status);
+      // Continue anyway - we have the basic info from the application
+      // Create a minimal catalog badge from application data
+      catalogBadge = {
+        id: badgeApplication.catalog_badge.id,
+        title: badgeApplication.catalog_badge.title,
+        description: badgeApplication.catalog_badge.description || "",
+        category: badgeApplication.catalog_badge.category,
+        level: badgeApplication.catalog_badge.level,
+        version: badgeApplication.catalog_badge.version,
+        status: "active",
+        created_by: "",
+        created_at: "",
+        deactivated_at: null,
+        metadata: null,
+      };
+    }
+  } catch (e) {
+    console.error("Error fetching catalog badge:", e);
+    // Use data from application
+    catalogBadge = {
+      id: badgeApplication.catalog_badge.id,
+      title: badgeApplication.catalog_badge.title,
+      description: badgeApplication.catalog_badge.description || "",
+      category: badgeApplication.catalog_badge.category,
+      level: badgeApplication.catalog_badge.level,
+      version: badgeApplication.catalog_badge.version,
+      status: "active",
+      created_by: "",
+      created_at: "",
+      deactivated_at: null,
+      metadata: null,
+    };
+  }
+}
+
+// =========================================================================
+// Handle Errors
+// =========================================================================
+
+if (error || !badgeApplication || !catalogBadge) {
+  return Astro.redirect("/applications?error=" + encodeURIComponent(error || "Failed to load application"));
+}
+
+// Check if badge is inactive
+const showInactiveWarning = catalogBadge.status === "inactive";
+---
+
+<Layout title="Edit Badge Application - Badger">
+  <main class="min-h-screen bg-background">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+      {
+        showInactiveWarning && (
+          <div class="mb-6 rounded-lg border border-warning bg-warning/10 p-4">
+            <div class="flex items-start gap-3">
+              <svg
+                class="h-5 w-5 text-warning flex-shrink-0 mt-0.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <div>
+                <h3 class="font-semibold text-warning">This badge is no longer active</h3>
+                <p class="text-sm text-warning/80 mt-1">
+                  You can save this application as a draft, but submission may not be possible.
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      <!-- ApplicationEditor React Component -->
+      <ApplicationEditor
+        client:load
+        mode="edit"
+        catalogBadge={catalogBadge}
+        existingApplication={badgeApplication}
+        userId={userId}
+      />
+    </div>
+  </main>
+</Layout>

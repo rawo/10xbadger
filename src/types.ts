@@ -608,3 +608,96 @@ export interface DashboardViewProps {
   initialData: DashboardViewModel;
   userId: string;
 }
+
+// =============================================================================
+// Badge Application Editor Types
+// =============================================================================
+
+/**
+ * Form state representing all editable fields in the badge application
+ */
+export interface ApplicationFormData {
+  catalog_badge_id: string;
+  date_of_application: string; // YYYY-MM-DD format
+  date_of_fulfillment: string; // YYYY-MM-DD format (empty string if not set)
+  reason: string;
+}
+
+/**
+ * Map of field names to error messages for displaying validation feedback
+ */
+export interface ValidationErrors {
+  date_of_application?: string;
+  date_of_fulfillment?: string;
+  reason?: string;
+}
+
+/**
+ * Autosave status values
+ */
+export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
+
+/**
+ * State object tracking autosave status and metadata
+ */
+export interface AutosaveState {
+  status: AutosaveStatus;
+  lastSavedAt?: Date;
+  error?: string;
+}
+
+/**
+ * Props for ApplicationEditor component
+ */
+export interface ApplicationEditorProps {
+  mode: "create" | "edit";
+  catalogBadge: CatalogBadgeDetailDto;
+  existingApplication?: BadgeApplicationDetailDto;
+  userId: string;
+}
+
+/**
+ * Props for EditorHeader component
+ */
+export interface EditorHeaderProps {
+  mode: "create" | "edit";
+  status?: BadgeApplicationStatusType;
+  catalogBadgeTitle: string;
+}
+
+/**
+ * Props for BadgeInfoSection component
+ */
+export interface BadgeInfoSectionProps {
+  catalogBadge: CatalogBadgeDetailDto;
+}
+
+/**
+ * Props for ApplicationFormSection component
+ */
+export interface ApplicationFormSectionProps {
+  formData: ApplicationFormData;
+  errors: ValidationErrors;
+  onChange: (field: keyof ApplicationFormData, value: string) => void;
+  onBlur: (field: keyof ApplicationFormData) => void;
+  disabled?: boolean;
+}
+
+/**
+ * Props for ActionBar component
+ */
+export interface ActionBarProps {
+  autosaveState: AutosaveState;
+  canSubmit: boolean;
+  isSubmitting: boolean;
+  onSaveDraft: () => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+}
+
+/**
+ * Props for AutosaveIndicator component
+ */
+export interface AutosaveIndicatorProps {
+  state: AutosaveState;
+}
