@@ -490,9 +490,9 @@ export class BadgeApplicationService {
       }
     }
 
-    // Dependency checks: ensure not referenced by promotion submissions
+    // Dependency checks: ensure not referenced by promotion badges (linked to promotions)
     const { data: refs, error: refsError } = await this.supabase
-      .from("promotion_submissions")
+      .from("promotion_badges")
       .select("id")
       .eq("badge_application_id", id)
       .limit(1);
