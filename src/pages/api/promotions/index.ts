@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { PromotionService } from "@/lib/promotion.service";
 import { listPromotionsQuerySchema } from "@/lib/validation/promotion.validation";
+import { UUID_REGEX } from "@/lib/validation/uuid";
 import type { ApiError, CreatePromotionCommand } from "@/types";
 import { z } from "zod";
 
@@ -150,7 +151,7 @@ export const GET: APIRoute = async (context) => {
 // =============================================================================
 
 const createPromotionSchema = z.object({
-  template_id: z.string().uuid("Invalid template ID format"),
+  template_id: z.string().min(1, "Invalid template ID format"),
 });
 
 /**
@@ -269,6 +270,23 @@ export const POST: APIRoute = async (context) => {
     }
 
     const command: CreatePromotionCommand = validation.data;
+
+    // Additional format validation: accept either UUID or legacy template-<id> format.
+    const templateId = command.template_id;
+    // Accept either a UUID-like string (lenient hex format) or legacy template-<id>
+    const uuidCheck = UUID_REGEX.test(String(templateId));
+    const legacyCheck = /^template-[\w-]+$/.test(String(templateId));
+    if (!uuidCheck && !legacyCheck) {
+      const error: ApiError = {
+        error: "validation_error",
+        message: "Validation failed",
+        details: [{ field: "template_id", message: "Invalid template ID format" }],
+      };
+      return new Response(JSON.stringify(error), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     // =========================================================================
     // Step 3: Create Promotion via Service

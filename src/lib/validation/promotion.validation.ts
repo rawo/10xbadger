@@ -5,7 +5,15 @@ import { z } from "zod";
  * Reusable for any endpoint that requires a promotion ID
  */
 export const promotionIdParamSchema = z.object({
-  id: z.string().uuid("Invalid promotion ID format"),
+  id: z.union([
+    z
+      .string()
+      .regex(
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+        "Invalid promotion ID format"
+      ),
+    z.string().regex(/^promo-[\w-]+$/, "Invalid promotion ID format"),
+  ]),
 });
 
 /**
@@ -20,13 +28,18 @@ export const listPromotionsQuerySchema = z.object({
   status: z.enum(["draft", "submitted", "approved", "rejected"]).optional(),
 
   // Filter by creator ID (admin only - enforced in route handler)
-  created_by: z.string().uuid("Invalid user ID format").optional(),
+  created_by: z.string().optional(),
 
   // Filter by career path
   path: z.enum(["technical", "financial", "management"]).optional(),
 
   // Filter by promotion template
-  template_id: z.string().uuid("Invalid template ID format").optional(),
+  template_id: z
+    .union([
+      z.string().uuid("Invalid template ID format"),
+      z.string().regex(/^template-[\w-]+$/, "Invalid template ID format"),
+    ])
+    .optional(),
 
   // Sort field - defaults to created_at
   sort: z.enum(["created_at", "submitted_at"]).default("created_at"),

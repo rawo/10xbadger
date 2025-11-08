@@ -2,6 +2,7 @@
 import Layout from "@/layouts/Layout.astro";
 import { ApplicationEditor } from "@/components/badge-applications/ApplicationEditor";
 import type { BadgeApplicationDetailDto, CatalogBadgeDetailDto, ApiError } from "@/types";
+import { UUID_REGEX } from "@/lib/validation/uuid";
 
 /**
  * Edit Badge Application Page
@@ -48,8 +49,7 @@ if (!id) {
 }
 
 // Basic UUID validation
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-if (!uuidRegex.test(id)) {
+if (!UUID_REGEX.test(id)) {
   // Invalid UUID format - redirect to applications list
   return Astro.redirect("/applications");
 }

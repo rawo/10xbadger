@@ -1,5 +1,6 @@
 import type { APIRoute } from "astro";
 import { PromotionService } from "@/lib/promotion.service";
+import { UUID_REGEX } from "@/lib/validation/uuid";
 import type {
   ApiError,
   AddPromotionBadgesCommand,
@@ -79,15 +80,14 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    // Validate promotion ID is a valid UUID
-    const uuidSchema = z.string().uuid();
-    const promotionIdValidation = uuidSchema.safeParse(promotionId);
-
-    if (!promotionIdValidation.success) {
+    // Validate promotion ID format (lenient UUID check)
+    if (!UUID_REGEX.test(String(promotionId))) {
       const error: ApiError = {
         error: "validation_error",
         message: "Invalid promotion ID format",
       };
+
+      // console.error("DELETE /api/promotions/:id/badges - invalid promotionId format:", promotionId);
       return new Response(JSON.stringify(error), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -364,15 +364,15 @@ export const DELETE: APIRoute = async (context) => {
       });
     }
 
-    // Validate promotion ID is a valid UUID
-    const uuidSchema = z.string().uuid();
-    const promotionIdValidation = uuidSchema.safeParse(promotionId);
-
-    if (!promotionIdValidation.success) {
+    // Validate promotion ID format (lenient UUID check)
+    if (!UUID_REGEX.test(String(promotionId))) {
       const error: ApiError = {
         error: "validation_error",
         message: "Invalid promotion ID format",
       };
+      // Debug: log invalid promotion id format
+      // eslint-disable-next-line no-console
+      console.error("DELETE /api/promotions/:id - invalid promotionId format:", promotionId);
       return new Response(JSON.stringify(error), {
         status: 400,
         headers: { "Content-Type": "application/json" },
