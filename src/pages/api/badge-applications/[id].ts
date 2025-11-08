@@ -41,7 +41,7 @@ export const GET: APIRoute = async (context) => {
     // and use a default non-admin user for development purposes.
 
     const isAdmin = false; // Default to non-admin user for development
-    const userId = "550e8400-e29b-41d4-a716-446655440101"; // Default user (John Doe)
+    const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user (John Doe)
 
     // =========================================================================
     // PRODUCTION CODE (Currently Disabled)
@@ -178,7 +178,7 @@ export const PUT: APIRoute = async (context) => {
   try {
     // DEVELOPMENT MODE defaults
     const isAdmin = false;
-    const userId = "550e8400-e29b-41d4-a716-446655440101";
+    const userId = "550e8400-e29b-41d4-a716-446655440100";
 
     // Validate path parameter
     const id = context.params.id as string;
@@ -288,7 +288,7 @@ export const DELETE: APIRoute = async (context) => {
   try {
     // DEVELOPMENT MODE defaults
     const isAdmin = false;
-    const userId = "550e8400-e29b-41d4-a716-446655440101";
+    const userId = "550e8400-e29b-41d4-a716-446655440100";
 
     // Validate path parameter
     const id = context.params.id as string;
