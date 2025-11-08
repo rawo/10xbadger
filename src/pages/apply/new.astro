@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { ApplicationEditor } from "@/components/badge-applications/ApplicationEditor";
+import { CatalogBadgesView } from "@/components/catalog-badges/CatalogBadgesView";
 import type { CatalogBadgeDetailDto, ApiError } from "@/types";
 
 /**
@@ -37,66 +38,62 @@ const userId = user.id;
 */
 
 // =========================================================================
-// Validate Query Parameters
+// Determine behavior: if a catalog_badge_id is provided we load the badge,
+// otherwise we show an embedded catalog selector so users can pick a badge.
 // =========================================================================
 
 const catalogBadgeId = Astro.url.searchParams.get("catalog_badge_id");
-
-if (!catalogBadgeId) {
-  // Missing required parameter - redirect to catalog
-  return Astro.redirect("/catalog");
-}
-
-// Basic UUID validation
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-if (!uuidRegex.test(catalogBadgeId)) {
-  // Invalid UUID format - redirect to catalog
-  return Astro.redirect("/catalog");
-}
-
-// =========================================================================
-// Fetch Catalog Badge Data
-// =========================================================================
-
 const baseUrl = Astro.url.origin;
 let catalogBadge: CatalogBadgeDetailDto | null = null;
 let error: string | null = null;
+let showCatalogSelector = false;
+let showInactiveWarning = false;
 
-try {
-  const response = await fetch(`${baseUrl}/api/catalog-badges/${catalogBadgeId}`, {
-    headers: {
-      Cookie: Astro.request.headers.get("Cookie") || "",
-    },
-  });
-
-  if (response.status === 404) {
-    // Badge not found
-    error = "Catalog badge not found";
-  } else if (response.status === 401) {
-    // Unauthorized - redirect to login
-    return Astro.redirect("/login?return=" + encodeURIComponent(Astro.url.pathname + Astro.url.search));
-  } else if (!response.ok) {
-    const apiError: ApiError = await response.json();
-    error = apiError.message || "Failed to fetch catalog badge";
-  } else {
-    catalogBadge = await response.json();
+if (!catalogBadgeId) {
+  // No badge selected — show embedded catalog to let the user pick one.
+  showCatalogSelector = true;
+} else {
+  // Basic UUID validation
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(catalogBadgeId)) {
+    // Invalid UUID format - redirect to catalog
+    return Astro.redirect("/catalog");
   }
-} catch (e) {
-  console.error("Error fetching catalog badge:", e);
-  error = "Failed to load catalog badge data";
+
+  // Fetch Catalog Badge Data
+  try {
+    const response = await fetch(`${baseUrl}/api/catalog-badges/${catalogBadgeId}`, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (response.status === 404) {
+      // Badge not found
+      error = "Catalog badge not found";
+    } else if (response.status === 401) {
+      // Unauthorized - redirect to login
+      return Astro.redirect("/login?return=" + encodeURIComponent(Astro.url.pathname + Astro.url.search));
+    } else if (!response.ok) {
+      const apiError: ApiError = await response.json();
+      error = apiError.message || "Failed to fetch catalog badge";
+    } else {
+      catalogBadge = await response.json();
+    }
+  } catch (e) {
+    console.error("Error fetching catalog badge:", e);
+    error = "Failed to load catalog badge data";
+  }
+
+  // Handle fetch errors
+  if (error || !catalogBadge) {
+    // Show error page
+    return Astro.response.redirect("/catalog?error=" + encodeURIComponent(error || "Badge not found"));
+  }
+
+  // Check if badge is inactive
+  showInactiveWarning = catalogBadge.status === "inactive";
 }
-
-// =========================================================================
-// Handle Errors
-// =========================================================================
-
-if (error || !catalogBadge) {
-  // Show error page
-  return Astro.response.redirect("/catalog?error=" + encodeURIComponent(error || "Badge not found"));
-}
-
-// Check if badge is inactive
-const showInactiveWarning = catalogBadge.status === "inactive";
 ---
 
 <Layout title="New Badge Application - Badger">
@@ -130,8 +127,16 @@ const showInactiveWarning = catalogBadge.status === "inactive";
         )
       }
 
-      <!-- ApplicationEditor React Component -->
-      <ApplicationEditor client:load mode="create" catalogBadge={catalogBadge} userId={userId} />
+      {
+        showCatalogSelector ? (
+          // If no badge selected, show an embedded catalog selector so users can choose a badge.
+          // Provide an empty initial dataset; the client hook will fetch real data on mount.
+          <CatalogBadgesView client:load initialData={{ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }} isAdmin={false} />
+        ) : (
+          <!-- ApplicationEditor React Component -->
+          <ApplicationEditor client:load mode="create" catalogBadge={catalogBadge} userId={userId} />
+        )
+      }
     </div>
   </main>
 </Layout>

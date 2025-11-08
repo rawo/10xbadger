@@ -52,7 +52,7 @@ export function ApplicationsListView(props: ApplicationsListViewProps) {
   return (
     <div className="space-y-6">
       {/* Page Header with Title and Action Button */}
-      <PageHeader title="My Applications" actionLabel="New Application" actionHref="/catalog" />
+      <PageHeader title="My Applications" actionLabel="New Application" actionHref="/apply/new" />
 
       {/* Error Display */}
       {error && (

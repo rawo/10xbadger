@@ -34,7 +34,7 @@ export function CatalogBadgesView(props: CatalogBadgesViewProps) {
    * Handle badge card click - navigate to application form
    */
   const handleBadgeClick = (badgeId: string) => {
-    window.location.href = `/applications/new?badge_id=${badgeId}`;
+    window.location.href = `/apply/new?catalog_badge_id=${badgeId}`;
   };
 
   /**
