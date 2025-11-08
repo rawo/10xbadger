@@ -49,9 +49,7 @@ export function QuickActions({ className }: QuickActionsProps) {
             </div>
             <div className="flex-1 text-left">
               <p className="font-medium text-sm">Browse Catalog</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Explore available badges
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Explore available badges</p>
             </div>
           </Button>
         </a>
@@ -70,19 +68,12 @@ export function QuickActions({ className }: QuickActionsProps) {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
             <div className="flex-1 text-left">
               <p className="font-medium text-sm">Apply for Badge</p>
-              <p className="text-xs opacity-90 mt-0.5">
-                Start a new application
-              </p>
+              <p className="text-xs opacity-90 mt-0.5">Start a new application</p>
             </div>
           </Button>
         </a>
@@ -111,9 +102,7 @@ export function QuickActions({ className }: QuickActionsProps) {
             </div>
             <div className="flex-1 text-left">
               <p className="font-medium text-sm">View Templates</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                See promotion requirements
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">See promotion requirements</p>
             </div>
           </Button>
         </a>

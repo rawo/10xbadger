@@ -45,40 +45,30 @@ export function useDashboardData(userId: string, initialData: DashboardViewModel
         approvedPromosResponse,
         rejectedPromosResponse,
       ] = await Promise.all([
-        fetch("/api/badge-applications?status=draft&limit=10&sort=created_at&order=desc").then(
-          (r) => {
-            if (!r.ok) throw new Error(`Failed to fetch draft applications: ${r.status}`);
-            return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
-          }
-        ),
-        fetch(
-          "/api/badge-applications?status=submitted&limit=10&sort=submitted_at&order=desc"
-        ).then((r) => {
+        fetch("/api/badge-applications?status=draft&limit=10&sort=created_at&order=desc").then((r) => {
+          if (!r.ok) throw new Error(`Failed to fetch draft applications: ${r.status}`);
+          return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
+        }),
+        fetch("/api/badge-applications?status=submitted&limit=10&sort=submitted_at&order=desc").then((r) => {
           if (!r.ok) throw new Error(`Failed to fetch submitted applications: ${r.status}`);
           return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
         }),
-        fetch("/api/badge-applications?status=accepted&limit=10&sort=created_at&order=desc").then(
-          (r) => {
-            if (!r.ok) throw new Error(`Failed to fetch accepted applications: ${r.status}`);
-            return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
-          }
-        ),
-        fetch("/api/badge-applications?status=rejected&limit=10&sort=created_at&order=desc").then(
-          (r) => {
-            if (!r.ok) throw new Error(`Failed to fetch rejected applications: ${r.status}`);
-            return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
-          }
-        ),
+        fetch("/api/badge-applications?status=accepted&limit=10&sort=created_at&order=desc").then((r) => {
+          if (!r.ok) throw new Error(`Failed to fetch accepted applications: ${r.status}`);
+          return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
+        }),
+        fetch("/api/badge-applications?status=rejected&limit=10&sort=created_at&order=desc").then((r) => {
+          if (!r.ok) throw new Error(`Failed to fetch rejected applications: ${r.status}`);
+          return r.json() as Promise<PaginatedResponse<BadgeApplicationListItemDto>>;
+        }),
         fetch("/api/promotions?status=draft&limit=10&sort=created_at&order=desc").then((r) => {
           if (!r.ok) throw new Error(`Failed to fetch draft promotions: ${r.status}`);
           return r.json() as Promise<PaginatedResponse<PromotionListItemDto>>;
         }),
-        fetch("/api/promotions?status=submitted&limit=10&sort=submitted_at&order=desc").then(
-          (r) => {
-            if (!r.ok) throw new Error(`Failed to fetch submitted promotions: ${r.status}`);
-            return r.json() as Promise<PaginatedResponse<PromotionListItemDto>>;
-          }
-        ),
+        fetch("/api/promotions?status=submitted&limit=10&sort=submitted_at&order=desc").then((r) => {
+          if (!r.ok) throw new Error(`Failed to fetch submitted promotions: ${r.status}`);
+          return r.json() as Promise<PaginatedResponse<PromotionListItemDto>>;
+        }),
         fetch("/api/promotions?status=approved&limit=10&sort=created_at&order=desc").then((r) => {
           if (!r.ok) throw new Error(`Failed to fetch approved promotions: ${r.status}`);
           return r.json() as Promise<PaginatedResponse<PromotionListItemDto>>;

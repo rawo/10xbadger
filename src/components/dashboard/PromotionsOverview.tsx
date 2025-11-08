@@ -31,12 +31,7 @@ interface PromotionsOverviewProps {
 
 export function PromotionsOverview({ promotions, className }: PromotionsOverviewProps) {
   // Combine all promotions into a single list
-  const allPromotions = [
-    ...promotions.draft,
-    ...promotions.submitted,
-    ...promotions.approved,
-    ...promotions.rejected,
-  ];
+  const allPromotions = [...promotions.draft, ...promotions.submitted, ...promotions.approved, ...promotions.rejected];
 
   // Sort by created_at descending (most recent first)
   const sortedPromotions = allPromotions.sort((a, b) => {
@@ -89,21 +84,13 @@ export function PromotionsOverview({ promotions, className }: PromotionsOverview
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
             <p className="mt-4 text-sm font-medium text-foreground">No promotions yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Start building your promotion when you have accepted badges
             </p>
-            <a
-              href="/promotions/new"
-              className="mt-4 inline-flex items-center text-sm text-primary hover:underline"
-            >
+            <a href="/promotions/new" className="mt-4 inline-flex items-center text-sm text-primary hover:underline">
               Create your first promotion →
             </a>
           </div>

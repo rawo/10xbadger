@@ -30,9 +30,7 @@ interface BadgeApplicationItemProps {
 /**
  * Get status badge variant based on application status
  */
-function getStatusVariant(
-  status: BadgeApplicationStatusType
-): "default" | "secondary" | "destructive" | "outline" {
+function getStatusVariant(status: BadgeApplicationStatusType): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case BadgeApplicationStatus.Draft:
       return "secondary";
@@ -104,11 +102,7 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function BadgeApplicationItem({
-  application,
-  onNavigate,
-  className,
-}: BadgeApplicationItemProps) {
+export function BadgeApplicationItem({ application, onNavigate, className }: BadgeApplicationItemProps) {
   const handleClick = () => {
     if (onNavigate) {
       onNavigate(application.id);
@@ -147,12 +141,9 @@ export function BadgeApplicationItem({
               variant="outline"
               className={cn(
                 "text-xs capitalize",
-                application.catalog_badge.level === "gold" &&
-                  "border-yellow-500 text-yellow-700 dark:text-yellow-400",
-                application.catalog_badge.level === "silver" &&
-                  "border-gray-400 text-gray-700 dark:text-gray-300",
-                application.catalog_badge.level === "bronze" &&
-                  "border-orange-500 text-orange-700 dark:text-orange-400"
+                application.catalog_badge.level === "gold" && "border-yellow-500 text-yellow-700 dark:text-yellow-400",
+                application.catalog_badge.level === "silver" && "border-gray-400 text-gray-700 dark:text-gray-300",
+                application.catalog_badge.level === "bronze" && "border-orange-500 text-orange-700 dark:text-orange-400"
               )}
             >
               {application.catalog_badge.level}
@@ -169,7 +160,10 @@ export function BadgeApplicationItem({
 
         {/* Status Badge */}
         <div className="flex-shrink-0">
-          <Badge variant={getStatusVariant(application.status as BadgeApplicationStatusType)} className={getStatusColorClass(application.status as BadgeApplicationStatusType)}>
+          <Badge
+            variant={getStatusVariant(application.status as BadgeApplicationStatusType)}
+            className={getStatusColorClass(application.status as BadgeApplicationStatusType)}
+          >
             {formatStatus(application.status as BadgeApplicationStatusType)}
           </Badge>
         </div>

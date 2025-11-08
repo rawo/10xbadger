@@ -1,0 +1,97 @@
+---
+/**
+ * Catalog Badges List Page
+ *
+ * Server-side rendered page that displays the badge catalog with filtering,
+ * searching, sorting, and pagination capabilities.
+ *
+ * User Roles:
+ * - Standard Users: Browse and search active badges
+ * - Administrators: All standard user capabilities + CRUD operations
+ */
+
+import Layout from "@/layouts/Layout.astro";
+import { CatalogBadgesView } from "@/components/catalog-badges/CatalogBadgesView";
+import type { PaginatedResponse, CatalogBadgeListItemDto, ApiError } from "@/types";
+
+// TODO: Enable authentication when ready
+// const supabase = Astro.locals.supabase;
+// const { data: { session } } = await supabase.auth.getSession();
+// if (!session) {
+//   return Astro.redirect('/login');
+// }
+// const userId = session.user.id;
+
+// Development defaults (TODO: Replace with actual authentication)
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
+const isAdmin = false; // Default to non-admin for development
+
+// Parse query parameters with defaults
+const url = new URL(Astro.request.url);
+const category = url.searchParams.get("category") || undefined;
+const level = url.searchParams.get("level") || undefined;
+const status = url.searchParams.get("status") || undefined;
+const search = url.searchParams.get("q") || undefined;
+const sort = url.searchParams.get("sort") || "created_at";
+const order = url.searchParams.get("order") || "desc";
+const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+
+// Build API query parameters
+const params = new URLSearchParams();
+if (category) params.set("category", category);
+if (level) params.set("level", level);
+if (status && isAdmin) params.set("status", status);
+if (search) params.set("q", search);
+params.set("sort", sort);
+params.set("order", order);
+params.set("limit", limit.toString());
+params.set("offset", offset.toString());
+
+// Fetch initial data from API
+let initialData: PaginatedResponse<CatalogBadgeListItemDto>;
+let error: string | null = null;
+
+try {
+  const response = await fetch(`${url.origin}/api/catalog-badges?${params.toString()}`);
+
+  if (!response.ok) {
+    const errorData: ApiError = await response.json();
+    error = errorData.message || "Failed to load catalog badges";
+    console.error("[Catalog] API error:", errorData);
+  } else {
+    initialData = await response.json();
+  }
+} catch (err) {
+  error = "Network error: Unable to load catalog badges";
+  console.error("[Catalog] Fetch error:", err);
+}
+
+// Fallback data if fetch fails
+if (!initialData) {
+  initialData = {
+    data: [],
+    pagination: {
+      total: 0,
+      limit,
+      offset,
+      has_more: false,
+    },
+  };
+}
+---
+
+<Layout title="Badge Catalog">
+  {
+    error ? (
+      <div class="container mx-auto px-4 py-8">
+        <div class="rounded-lg border border-destructive bg-destructive/10 p-6">
+          <h2 class="text-lg font-semibold text-destructive mb-2">Error Loading Catalog</h2>
+          <p class="text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    ) : (
+      <CatalogBadgesView initialData={initialData} userId={userId} isAdmin={isAdmin} client:load />
+    )
+  }
+</Layout>

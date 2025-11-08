@@ -35,9 +35,7 @@ export function DashboardView({ initialData, userId }: DashboardViewProps) {
       <div className="flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Your Dashboard</h2>
-          <p className="text-sm text-muted-foreground">
-            Overview of your badge applications and promotions
-          </p>
+          <p className="text-sm text-muted-foreground">Overview of your badge applications and promotions</p>
         </div>
         <button
           onClick={refetch}
@@ -52,14 +50,7 @@ export function DashboardView({ initialData, userId }: DashboardViewProps) {
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path
                   className="opacity-75"
                   fill="currentColor"
@@ -114,7 +105,13 @@ export function DashboardView({ initialData, userId }: DashboardViewProps) {
       )}
 
       {/* Content with opacity transition during refresh */}
-      <div className={isRefreshing ? "opacity-50 pointer-events-none transition-opacity duration-200" : "opacity-100 transition-opacity duration-200"}>
+      <div
+        className={
+          isRefreshing
+            ? "opacity-50 pointer-events-none transition-opacity duration-200"
+            : "opacity-100 transition-opacity duration-200"
+        }
+      >
         {/* Quick Actions */}
         <div className="animate-in slide-in-from-bottom-4 duration-500 delay-100">
           <QuickActions />

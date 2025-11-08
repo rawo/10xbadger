@@ -63,10 +63,7 @@ export function StatCard({ label, value, icon, link, variant = "default", classN
         )}
       >
         <Card
-          className={cn(
-            "h-full cursor-pointer transition-all duration-300 hover:shadow-md",
-            variantStyles[variant]
-          )}
+          className={cn("h-full cursor-pointer transition-all duration-300 hover:shadow-md", variantStyles[variant])}
         >
           {content}
         </Card>
@@ -75,9 +72,5 @@ export function StatCard({ label, value, icon, link, variant = "default", classN
   }
 
   // Otherwise, render card without link
-  return (
-    <Card className={cn("h-full", variantStyles[variant], className)}>
-      {content}
-    </Card>
-  );
+  return <Card className={cn("h-full", variantStyles[variant], className)}>{content}</Card>;
 }

@@ -32,13 +32,8 @@ interface BadgeApplicationsOverviewProps {
   className?: string;
 }
 
-export function BadgeApplicationsOverview({
-  applications,
-  className,
-}: BadgeApplicationsOverviewProps) {
-  const [selectedStatus, setSelectedStatus] = useState<BadgeApplicationStatusType>(
-    BadgeApplicationStatus.Draft
-  );
+export function BadgeApplicationsOverview({ applications, className }: BadgeApplicationsOverviewProps) {
+  const [selectedStatus, setSelectedStatus] = useState<BadgeApplicationStatusType>(BadgeApplicationStatus.Draft);
 
   // Count badges for each status
   const counts = {
@@ -107,10 +102,7 @@ export function BadgeApplicationsOverview({
                   />
                 </svg>
                 <p className="mt-4 text-sm text-muted-foreground">No draft applications</p>
-                <a
-                  href="/apply/new"
-                  className="mt-2 inline-flex items-center text-sm text-primary hover:underline"
-                >
+                <a href="/apply/new" className="mt-2 inline-flex items-center text-sm text-primary hover:underline">
                   Create your first application →
                 </a>
               </div>

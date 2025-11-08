@@ -825,3 +825,104 @@ export interface EmptyStateProps {
   onClearFilters?: () => void;
   onCreate?: () => void;
 }
+
+// =============================================================================
+// Catalog Badges View Types
+// =============================================================================
+
+/**
+ * Filter state for catalog badges view
+ */
+export interface CatalogBadgeFilters {
+  category?: BadgeCategoryType;
+  level?: BadgeLevelType;
+  status?: CatalogBadgeStatusType;
+  search?: string; // Search query (q parameter)
+  sort: "created_at" | "title";
+  order: "asc" | "desc";
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Props for CatalogBadgesView component
+ */
+export interface CatalogBadgesViewProps {
+  initialData: PaginatedResponse<CatalogBadgeListItemDto>;
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * Form data for badge create/edit modal
+ */
+export interface BadgeFormData {
+  title: string;
+  description: string;
+  category: BadgeCategoryType | "";
+  level: BadgeLevelType | "";
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Props for BadgeFormModal
+ */
+export interface BadgeFormModalProps {
+  isOpen: boolean;
+  mode: "create" | "edit";
+  badge?: CatalogBadgeListItemDto;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+/**
+ * Props for BadgeCard component
+ */
+export interface BadgeCardProps {
+  badge: CatalogBadgeListItemDto;
+  isAdmin: boolean;
+  onClick: (badgeId: string) => void;
+  onEdit: (badge: CatalogBadgeListItemDto) => void;
+  onDeactivate: (badgeId: string) => void;
+}
+
+/**
+ * Props for catalog FilterBar component
+ */
+export interface CatalogFilterBarProps {
+  filters: CatalogBadgeFilters;
+  onFilterChange: (filters: Partial<CatalogBadgeFilters>) => void;
+  resultCount: number;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for BadgeGrid component
+ */
+export interface BadgeGridProps {
+  badges: CatalogBadgeListItemDto[];
+  isLoading: boolean;
+  isAdmin: boolean;
+  onBadgeClick: (badgeId: string) => void;
+  onEditClick: (badge: CatalogBadgeListItemDto) => void;
+  onDeactivateClick: (badgeId: string) => void;
+}
+
+/**
+ * Props for ConfirmDeactivateModal
+ */
+export interface ConfirmDeactivateModalProps {
+  isOpen: boolean;
+  badge: CatalogBadgeListItemDto | null;
+  onConfirm: (badgeId: string) => Promise<void>;
+  onCancel: () => void;
+}
+
+/**
+ * Props for catalog PageHeader component
+ */
+export interface CatalogPageHeaderProps {
+  title: string;
+  isAdmin: boolean;
+  onCreateClick: () => void;
+}
