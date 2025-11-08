@@ -113,6 +113,7 @@ export function useDashboardData(userId: string, initialData: DashboardViewModel
     } catch (err) {
       const error = err instanceof Error ? err : new Error("Failed to refresh dashboard data");
       setError(error);
+      // eslint-disable-next-line no-console
       console.error("Error refreshing dashboard:", error);
       toast.error("Failed to refresh dashboard", {
         description: error.message,

@@ -81,6 +81,7 @@ if (!catalogBadgeId) {
       catalogBadge = await response.json();
     }
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error("Error fetching catalog badge:", e);
     error = "Failed to load catalog badge data";
   }
@@ -131,9 +132,12 @@ if (!catalogBadgeId) {
         showCatalogSelector ? (
           // If no badge selected, show an embedded catalog selector so users can choose a badge.
           // Provide an empty initial dataset; the client hook will fetch real data on mount.
-          <CatalogBadgesView client:load initialData={{ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }} isAdmin={false} />
+          <CatalogBadgesView
+            client:load
+            initialData={{ data: [], pagination: { total: 0, limit: 20, offset: 0, has_more: false } }}
+            isAdmin={false}
+          />
         ) : (
-          <!-- ApplicationEditor React Component -->
           <ApplicationEditor client:load mode="create" catalogBadge={catalogBadge} userId={userId} />
         )
       }

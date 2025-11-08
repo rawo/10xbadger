@@ -1,0 +1,86 @@
+---
+/**
+ * Catalog Badge Detail Page
+ *
+ * Server-side rendered page that displays a single catalog badge with
+ * all metadata, requirements, example evidence, and admin actions.
+ *
+ * User Roles:
+ * - Standard Users: Browse badge details and apply for badges
+ * - Administrators: All standard user capabilities + edit and deactivate badges
+ */
+
+import Layout from "@/layouts/Layout.astro";
+import { CatalogBadgeDetail } from "@/components/catalog-badges/CatalogBadgeDetail";
+import type { CatalogBadgeDto, ApiError } from "@/types";
+
+// TODO: Enable authentication when ready
+// const supabase = Astro.locals.supabase;
+// const { data: { session } } = await supabase.auth.getSession();
+// if (!session) {
+//   return Astro.redirect('/login');
+// }
+// const userId = session.user.id;
+
+// Development defaults (TODO: Replace with actual authentication)
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
+const isAdmin = false; // Default to non-admin for development
+
+// Extract badge ID from URL params
+const { id } = Astro.params;
+
+// Validate ID parameter exists
+if (!id) {
+  return Astro.redirect("/catalog");
+}
+
+// Fetch badge data from API
+const url = new URL(Astro.request.url);
+let badge: CatalogBadgeDto | null = null;
+let error: string | null = null;
+
+try {
+  const response = await fetch(`${url.origin}/api/catalog-badges/${id}`);
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      error = "Badge not found";
+    } else {
+      const errorData: ApiError = await response.json();
+      error = errorData.message || "Failed to load badge details";
+    }
+    // eslint-disable-next-line no-console
+    console.error("[Catalog Detail] API error:", { status: response.status, error });
+  } else {
+    badge = await response.json();
+  }
+} catch (err) {
+  error = "Network error: Unable to load badge details";
+  // eslint-disable-next-line no-console
+  console.error("[Catalog Detail] Fetch error:", err);
+}
+
+// Generate page title
+const pageTitle = badge ? `${badge.title} - Badge Catalog` : "Badge Details";
+---
+
+<Layout title={pageTitle}>
+  {
+    error ? (
+      <div class="container mx-auto px-4 py-8">
+        <div class="rounded-lg border border-destructive bg-destructive/10 p-6">
+          <h2 class="text-lg font-semibold text-destructive mb-2">Error Loading Badge</h2>
+          <p class="text-muted-foreground mb-4">{error}</p>
+          <a
+            href="/catalog"
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+          >
+            Back to Catalog
+          </a>
+        </div>
+      </div>
+    ) : badge ? (
+      <CatalogBadgeDetail badge={badge} userId={userId} isAdmin={isAdmin} client:load />
+    ) : null
+  }
+</Layout>

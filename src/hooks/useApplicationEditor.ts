@@ -66,8 +66,10 @@ export function useApplicationEditor({
   mode,
   catalogBadge,
   existingApplication,
-  userId,
+  userId: _userId,
 }: UseApplicationEditorProps): UseApplicationEditorReturn {
+  // mark unused param as used for linting (server-side provided in some flows)
+  void _userId;
   // =========================================================================
   // State Variables
   // =========================================================================
@@ -126,9 +128,10 @@ export function useApplicationEditor({
     // Clear error for this field when user starts typing (only for validatable fields)
     if (field !== "catalog_badge_id") {
       setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field as keyof ValidationErrors];
-        return newErrors;
+        // Omit the field without using dynamic delete
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [field]: _removed, ...rest } = prev as Record<string, unknown>;
+        return rest as ValidationErrors;
       });
     }
   }, []);
@@ -154,9 +157,10 @@ export function useApplicationEditor({
         }));
       } else {
         setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors[field as keyof ValidationErrors];
-          return newErrors;
+          // Omit the field without using dynamic delete
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [field]: _removed, ...rest } = prev as Record<string, unknown>;
+          return rest as ValidationErrors;
         });
       }
     },
@@ -198,6 +202,7 @@ export function useApplicationEditor({
       toast.error("Failed to save draft", {
         description: message,
       });
+      // eslint-disable-next-line no-console
       console.error("Save error:", error);
     }
   }, [mode, applicationId, formData]);
@@ -266,6 +271,7 @@ export function useApplicationEditor({
       toast.error("Submission failed", {
         description: message,
       });
+      // eslint-disable-next-line no-console
       console.error("Submit error:", error);
     } finally {
       setIsSubmitting(false);

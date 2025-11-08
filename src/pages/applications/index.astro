@@ -104,6 +104,7 @@ try {
     initialData = await response.json();
   }
 } catch (err) {
+  // eslint-disable-next-line no-console
   console.error("Error fetching applications:", err);
   error = "An unexpected error occurred while loading applications";
 }

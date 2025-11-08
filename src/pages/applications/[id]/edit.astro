@@ -89,6 +89,7 @@ try {
     badgeApplication = await applicationResponse.json();
   }
 } catch (e) {
+  // eslint-disable-next-line no-console
   console.error("Error fetching badge application:", e);
   error = "Failed to load badge application data";
 }
@@ -122,6 +123,7 @@ if (badgeApplication) {
     if (catalogResponse.ok) {
       catalogBadge = await catalogResponse.json();
     } else {
+      // eslint-disable-next-line no-console
       console.error("Failed to fetch catalog badge:", catalogResponse.status);
       // Continue anyway - we have the basic info from the application
       // Create a minimal catalog badge from application data
@@ -140,6 +142,7 @@ if (badgeApplication) {
       };
     }
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error("Error fetching catalog badge:", e);
     // Use data from application
     catalogBadge = {

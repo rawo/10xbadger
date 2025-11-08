@@ -58,12 +58,14 @@ try {
   if (!response.ok) {
     const errorData: ApiError = await response.json();
     error = errorData.message || "Failed to load catalog badges";
+    // eslint-disable-next-line no-console
     console.error("[Catalog] API error:", errorData);
   } else {
     initialData = await response.json();
   }
 } catch (err) {
   error = "Network error: Unable to load catalog badges";
+  // eslint-disable-next-line no-console
   console.error("[Catalog] Fetch error:", err);
 }
 

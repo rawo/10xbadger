@@ -6,7 +6,6 @@ import { QuickActions } from "./QuickActions";
 import { BadgeApplicationsOverview } from "./BadgeApplicationsOverview";
 import { PromotionsOverview } from "./PromotionsOverview";
 import { DashboardSkeleton } from "./DashboardSkeleton";
-import { toast } from "sonner";
 
 /**
  * DashboardView Component
