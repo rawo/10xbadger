@@ -926,3 +926,116 @@ export interface CatalogPageHeaderProps {
   isAdmin: boolean;
   onCreateClick: () => void;
 }
+
+// =============================================================================
+// Application Detail View Types
+// =============================================================================
+
+/**
+ * Props for ApplicationDetailView component
+ */
+export interface ApplicationDetailViewProps {
+  initialData: BadgeApplicationDetailDto;
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for DetailHeader component
+ */
+export interface DetailHeaderProps {
+  applicationId: string;
+  badgeTitle: string;
+  status: BadgeApplicationStatusType;
+}
+
+/**
+ * Props for ApplicationInfoCard component
+ */
+export interface ApplicationInfoCardProps {
+  dateOfApplication: string;
+  dateOfFulfillment: string | null;
+  reason: string | null;
+  createdAt: string;
+  submittedAt: string | null;
+}
+
+/**
+ * Props for CatalogBadgeInfoCard component
+ */
+export interface CatalogBadgeInfoCardProps {
+  badge: CatalogBadgeDetail;
+}
+
+/**
+ * Props for ApplicantInfoCard component
+ */
+export interface ApplicantInfoCardProps {
+  applicant: UserSummary;
+  isVisible: boolean;
+}
+
+/**
+ * Props for ReviewInfoCard component
+ */
+export interface ReviewInfoCardProps {
+  status: BadgeApplicationStatusType;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  decisionNote: string | null;
+  isVisible: boolean;
+}
+
+/**
+ * Props for ActionBar component
+ */
+export interface ActionBarProps {
+  status: BadgeApplicationStatusType;
+  isOwner: boolean;
+  isAdmin: boolean;
+  isLoading: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSubmit: () => void;
+  onAccept: () => void;
+  onReject: () => void;
+  onBack: () => void;
+}
+
+/**
+ * Props for ReviewModal component
+ */
+export interface ReviewModalProps {
+  isOpen: boolean;
+  mode: "accept" | "reject";
+  applicationTitle: string;
+  onConfirm: (decisionNote?: string) => Promise<void>;
+  onCancel: () => void;
+}
+
+/**
+ * Props for ConfirmSubmitModal component
+ */
+export interface ConfirmSubmitModalProps {
+  isOpen: boolean;
+  applicationTitle: string;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}
+
+/**
+ * Props for ConfirmDeleteModal component
+ */
+export interface ConfirmDeleteModalProps {
+  isOpen: boolean;
+  applicationTitle: string;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}
+
+/**
+ * Form data for review modal
+ */
+export interface ReviewFormData {
+  decisionNote: string;
+}

@@ -1,0 +1,88 @@
+---
+/**
+ * Application Detail / Review Page
+ *
+ * Server-side rendered page that displays detailed information about a single
+ * badge application. Serves both application owners and administrators with
+ * different capabilities based on permissions.
+ *
+ * User Roles:
+ * - Standard Users (Owners): View, edit, delete, submit their own draft applications
+ * - Administrators: View any application, accept/reject submitted applications
+ */
+
+import Layout from "@/layouts/Layout.astro";
+import { ApplicationDetailView } from "@/components/badge-application-detail/ApplicationDetailView";
+import type { BadgeApplicationDetailDto, ApiError } from "@/types";
+
+// TODO: Enable authentication when ready
+// const supabase = Astro.locals.supabase;
+// const { data: { session } } = await supabase.auth.getSession();
+// if (!session) {
+//   return Astro.redirect('/login');
+// }
+// const userId = session.user.id;
+
+// Development defaults (TODO: Replace with actual authentication)
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
+const isAdmin = false; // Default to non-admin for development
+
+// Parse path parameter
+const id = Astro.params.id as string;
+
+// Validate UUID format (basic check)
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!id || !uuidRegex.test(id)) {
+  return Astro.redirect("/applications");
+}
+
+// Fetch application data from API
+let initialData: BadgeApplicationDetailDto | null = null;
+let error: string | null = null;
+let statusCode = 200;
+
+try {
+  const url = new URL(Astro.request.url);
+  const response = await fetch(`${url.origin}/api/badge-applications/${id}`);
+
+  if (!response.ok) {
+    statusCode = response.status;
+    const errorData: ApiError = await response.json();
+    error = errorData.message || "Failed to load application";
+  } else {
+    initialData = await response.json();
+  }
+} catch {
+  error = "Network error: Unable to load application";
+  statusCode = 500;
+}
+---
+
+<Layout title={initialData ? `Application: ${initialData.catalog_badge.title}` : "Application Details"}>
+  {
+    error ? (
+      <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+          <div class="rounded-lg border border-destructive bg-destructive/10 p-6">
+            <h2 class="text-lg font-semibold text-destructive mb-2">
+              {statusCode === 404
+                ? "Application Not Found"
+                : statusCode === 403
+                  ? "Access Denied"
+                  : "Error Loading Application"}
+            </h2>
+            <p class="text-muted-foreground mb-4">{error}</p>
+            <a
+              href="/applications"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+            >
+              Back to Applications
+            </a>
+          </div>
+        </div>
+      </div>
+    ) : initialData ? (
+      <ApplicationDetailView initialData={initialData} userId={userId} isAdmin={isAdmin} client:load />
+    ) : null
+  }
+</Layout>
