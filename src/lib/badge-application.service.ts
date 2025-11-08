@@ -505,8 +505,13 @@ export class BadgeApplicationService {
       throw new Error("REFERENCED_BY_PROMOTION");
     }
 
-    // Attempt delete
-    const { error: delError } = await this.supabase.from("badge_applications").delete().eq("id", id).single();
+    // Attempt delete and ensure a row was actually removed.
+    // Use `.select('id')` to have PostgREST return deleted rows so we can verify.
+    const { data: deletedRows, error: delError } = await this.supabase
+      .from("badge_applications")
+      .delete()
+      .eq("id", id)
+      .select("id");
 
     if (delError) {
       const msg = delError.message || String(delError);
@@ -514,6 +519,11 @@ export class BadgeApplicationService {
         throw new Error("REFERENCED_BY_PROMOTION");
       }
       throw new Error(`Failed to delete badge application: ${delError.message}`);
+    }
+
+    // If no rows were returned, deletion did not occur (possibly due to RLS); treat as failure.
+    if (!deletedRows || (Array.isArray(deletedRows) && deletedRows.length === 0)) {
+      throw new Error("Failed to delete badge application: no rows deleted");
     }
 
     return { id };
