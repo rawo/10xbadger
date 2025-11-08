@@ -57,7 +57,7 @@ export function ApplicationEditor({ mode, catalogBadge, existingApplication, use
       toast.success("Draft saved", {
         description: "Your changes have been saved successfully.",
       });
-    } catch (error) {
+    } catch {
       // Error toast is already shown by the hook
     }
   };

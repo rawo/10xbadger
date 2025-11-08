@@ -701,3 +701,127 @@ export interface ActionBarProps {
 export interface AutosaveIndicatorProps {
   state: AutosaveState;
 }
+
+// =============================================================================
+// Applications List View Types
+// =============================================================================
+
+/**
+ * Filter state for the applications list view
+ */
+export interface ApplicationListFilters {
+  status?: BadgeApplicationStatusType;
+  catalog_badge_id?: string;
+  sort: "created_at" | "submitted_at";
+  order: "asc" | "desc";
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Complete view model passed from Astro to React component
+ */
+export interface ApplicationsListViewModel {
+  applications: PaginatedResponse<BadgeApplicationListItemDto>;
+  filters: ApplicationListFilters;
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for ApplicationsListView component
+ */
+export interface ApplicationsListViewProps {
+  initialData: PaginatedResponse<BadgeApplicationListItemDto>;
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for PageHeader component
+ */
+export interface PageHeaderProps {
+  title: string;
+  actionLabel?: string;
+  actionHref?: string;
+  actionIcon?: React.ReactNode;
+}
+
+/**
+ * Props for FilterBar component
+ */
+export interface FilterBarProps {
+  filters: ApplicationListFilters;
+  onFilterChange: (filters: Partial<ApplicationListFilters>) => void;
+  resultCount: number;
+}
+
+/**
+ * Props for ApplicationsList component
+ */
+export interface ApplicationsListProps {
+  applications: BadgeApplicationListItemDto[];
+  isLoading?: boolean;
+  onEdit: (id: string) => void;
+  onView: (id: string) => void;
+  onDelete: (id: string) => void;
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for ApplicationRow component
+ */
+export interface ApplicationRowProps {
+  application: BadgeApplicationListItemDto;
+  onEdit: (id: string) => void;
+  onView: (id: string) => void;
+  onDelete: (id: string) => void;
+  isOwner: boolean;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for BadgeSummaryCard component
+ */
+export interface BadgeSummaryCardProps {
+  badge: CatalogBadgeSummary;
+  showLink?: boolean;
+}
+
+/**
+ * Props for StatusBadge component
+ */
+export interface StatusBadgeProps {
+  status: BadgeApplicationStatusType;
+  size?: "sm" | "md" | "lg";
+}
+
+/**
+ * Props for ActionMenu component
+ */
+export interface ActionMenuProps {
+  applicationId: string;
+  status: BadgeApplicationStatusType;
+  isOwner: boolean;
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+
+/**
+ * Props for Pagination component
+ */
+export interface PaginationProps {
+  pagination: PaginationMetadata;
+  onPageChange: (offset: number) => void;
+}
+
+/**
+ * Props for EmptyState component
+ */
+export interface EmptyStateProps {
+  hasFilters: boolean;
+  onClearFilters?: () => void;
+  onCreate?: () => void;
+}
