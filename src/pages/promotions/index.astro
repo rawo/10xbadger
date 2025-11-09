@@ -1,0 +1,159 @@
+---
+/**
+ * Promotions List Page (SSR)
+ * 
+ * Server-side rendered page that fetches initial promotions data and hydrates
+ * the PromotionsListView React component with client:load directive.
+ * 
+ * Route: /promotions
+ * Query Parameters:
+ *   - status: Filter by promotion status (draft, submitted, approved, rejected)
+ *   - path: Filter by career path (technical, financial, management)
+ *   - template_id: Filter by promotion template
+ *   - sort: Sort field (created_at, submitted_at) - default: created_at
+ *   - order: Sort order (asc, desc) - default: desc
+ *   - limit: Page size (default: 20, max: 100)
+ *   - offset: Page offset (default: 0)
+ */
+
+import Layout from "@/layouts/Layout.astro";
+import { PromotionsListView } from "@/components/promotions/PromotionsListView";
+import type { PaginatedResponse, PromotionListItemDto, ApiError } from "@/types";
+
+// =========================================================================
+// DEVELOPMENT MODE: Authentication Disabled
+// =========================================================================
+// TODO: Re-enable authentication before production deployment
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Test user (John Doe)
+const isAdmin = false; // Default to non-admin for development
+
+// =========================================================================
+// PRODUCTION CODE (Currently Disabled)
+// =========================================================================
+// Uncomment when authentication is ready:
+/*
+const {
+  data: { user },
+  error: authError,
+} = await Astro.locals.supabase.auth.getUser();
+
+if (authError || !user) {
+  return Astro.redirect('/login');
+}
+
+const { data: userData, error: userError } = await Astro.locals.supabase
+  .from("users")
+  .select("is_admin")
+  .eq("id", user.id)
+  .single();
+
+if (userError || !userData) {
+  return Astro.redirect('/login');
+}
+
+const userId = user.id;
+const isAdmin = userData.is_admin || false;
+*/
+
+// =========================================================================
+// Build API Request URL with Query Parameters
+// =========================================================================
+const url = new URL(Astro.request.url);
+const queryParams = new URLSearchParams();
+
+// Extract and validate query parameters
+const status = url.searchParams.get("status");
+const path = url.searchParams.get("path");
+const template_id = url.searchParams.get("template_id");
+const sort = url.searchParams.get("sort") || "created_at";
+const order = url.searchParams.get("order") || "desc";
+const limit = url.searchParams.get("limit") || "20";
+const offset = url.searchParams.get("offset") || "0";
+
+// Add filters to query
+if (status) queryParams.set("status", status);
+if (path) queryParams.set("path", path);
+if (template_id) queryParams.set("template_id", template_id);
+queryParams.set("sort", sort);
+queryParams.set("order", order);
+queryParams.set("limit", limit);
+queryParams.set("offset", offset);
+
+// =========================================================================
+// Fetch Initial Promotions Data
+// =========================================================================
+const baseUrl = Astro.url.origin;
+const apiUrl = `${baseUrl}/api/promotions?${queryParams.toString()}`;
+
+let promotionsData: PaginatedResponse<PromotionListItemDto> | null = null;
+let error: string | null = null;
+
+try {
+  const response = await fetch(apiUrl, {
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData: ApiError = await response.json();
+    error = errorData.message || "Failed to load promotions";
+  } else {
+    promotionsData = await response.json();
+  }
+} catch (err) {
+  console.error("Error fetching promotions:", err);
+  error = "An unexpected error occurred while loading promotions";
+}
+
+// =========================================================================
+// Handle Errors - Show Error Page
+// =========================================================================
+if (error || !promotionsData) {
+  return new Response(
+    `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Error | Promotions | Badger</title>
+      </head>
+      <body>
+        <h1>Error Loading Promotions</h1>
+        <p>${error || "Failed to load promotions data"}</p>
+        <a href="/promotions">Try Again</a>
+      </body>
+    </html>
+    `,
+    {
+      status: 500,
+      headers: { "Content-Type": "text/html" },
+    }
+  );
+}
+
+// =========================================================================
+// Build Initial Filters Object for Client Component
+// =========================================================================
+const initialFilters = {
+  status: status as "draft" | "submitted" | "approved" | "rejected" | undefined,
+  path: path as "technical" | "financial" | "management" | undefined,
+  template_id: template_id || undefined,
+  sort: sort as "created_at" | "submitted_at",
+  order: order as "asc" | "desc",
+  limit: parseInt(limit, 10),
+  offset: parseInt(offset, 10),
+};
+---
+
+<Layout title="Promotions | Badger">
+  <main class="min-h-screen bg-background">
+    <PromotionsListView
+      client:load
+      initialData={promotionsData}
+      initialFilters={initialFilters}
+      userId={userId}
+      isAdmin={isAdmin}
+    />
+  </main>
+</Layout>
+
