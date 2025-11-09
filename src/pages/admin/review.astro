@@ -1,0 +1,215 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { AdminReviewView } from "@/components/admin/AdminReviewView";
+import type { PaginatedResponse, BadgeApplicationListItemDto, AdminReviewMetrics, ApiError } from "@/types";
+
+/**
+ * Admin Review Queue Page
+ *
+ * Server-side rendered page that displays the admin review queue for badge applications.
+ * This page is admin-only and shows submitted applications awaiting review as well as
+ * previously reviewed applications (accepted/rejected).
+ *
+ * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
+ * TODO: Re-enable authentication before production deployment
+ */
+
+// =========================================================================
+// DEVELOPMENT MODE: Authentication Disabled
+// =========================================================================
+// TODO: Re-enable authentication before production deployment
+// For now, we use a default admin user ID for development
+
+const adminUserId = "550e8400-e29b-41d4-a716-446655440100"; // Test admin user (admin@goodcompany.com)
+const isAdmin = true; // Default to admin for development
+
+// =========================================================================
+// PRODUCTION CODE (Currently Disabled)
+// =========================================================================
+// Uncomment the code below when authentication is ready:
+/*
+const supabase = Astro.locals.supabase;
+
+// Check authentication
+const { data: { user }, error: authError } = await supabase.auth.getUser();
+if (authError || !user) {
+  return Astro.redirect('/login?return=/admin/review');
+}
+
+// Get user info and check admin status
+const { data: userData, error: userError } = await supabase
+  .from("users")
+  .select("is_admin")
+  .eq("id", user.id)
+  .single();
+
+if (userError || !userData) {
+  return Astro.redirect('/login');
+}
+
+if (!userData.is_admin) {
+  // Non-admin users cannot access this page
+  return new Response('Forbidden - Admin access required', { status: 403 });
+}
+
+const adminUserId = user.id;
+const isAdmin = userData.is_admin;
+*/
+
+// =========================================================================
+// Parse Query Parameters with Defaults
+// =========================================================================
+
+const url = new URL(Astro.request.url);
+const status = url.searchParams.get("status") || "submitted"; // Default to pending reviews
+const applicant_id = url.searchParams.get("applicant_id") || undefined;
+const catalog_badge_id = url.searchParams.get("catalog_badge_id") || undefined;
+const sort = url.searchParams.get("sort") || "submitted_at";
+const order = url.searchParams.get("order") || "desc";
+const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+
+// =========================================================================
+// Build API Query String
+// =========================================================================
+
+const queryParams = new URLSearchParams();
+if (status) queryParams.set("status", status);
+if (applicant_id) queryParams.set("applicant_id", applicant_id);
+if (catalog_badge_id) queryParams.set("catalog_badge_id", catalog_badge_id);
+queryParams.set("sort", sort);
+queryParams.set("order", order);
+queryParams.set("limit", limit.toString());
+queryParams.set("offset", offset.toString());
+
+const baseUrl = Astro.url.origin;
+const apiUrl = `${baseUrl}/api/badge-applications?${queryParams.toString()}`;
+
+// =========================================================================
+// Fetch Initial Data
+// =========================================================================
+
+let initialData: PaginatedResponse<BadgeApplicationListItemDto> | null = null;
+let error: string | null = null;
+
+try {
+  const response = await fetch(apiUrl, {
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Redirect to login if unauthorized
+      return Astro.redirect("/login?return=/admin/review");
+    }
+
+    if (response.status === 403) {
+      // Non-admin trying to access admin page
+      return new Response("Forbidden - Admin access required", { status: 403 });
+    }
+
+    const errorData: ApiError = await response.json();
+    error = errorData.message || "Failed to load applications";
+  } else {
+    initialData = await response.json();
+  }
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error("Error fetching applications for admin review:", err);
+  error = "An unexpected error occurred while loading applications";
+}
+
+// If we have an error and no data, provide empty fallback
+if (!initialData) {
+  initialData = {
+    data: [],
+    pagination: {
+      total: 0,
+      limit,
+      offset,
+      has_more: false,
+    },
+  };
+}
+
+// =========================================================================
+// Calculate Initial Metrics
+// =========================================================================
+// TODO: Replace with dedicated API endpoint for efficiency
+
+let initialMetrics: AdminReviewMetrics = {
+  pendingCount: 0,
+  acceptedTodayCount: 0,
+  rejectedTodayCount: 0,
+  totalSubmittedCount: 0,
+  totalReviewedCount: 0,
+};
+
+try {
+  // Fetch counts for different statuses
+  // This is a simplified approach for MVP - in production, use a dedicated endpoint
+  const [pendingRes, acceptedRes, rejectedRes] = await Promise.all([
+    fetch(`${baseUrl}/api/badge-applications?status=submitted&limit=1`, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    }),
+    fetch(`${baseUrl}/api/badge-applications?status=accepted&limit=1`, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    }),
+    fetch(`${baseUrl}/api/badge-applications?status=rejected&limit=1`, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    }),
+  ]);
+
+  if (pendingRes.ok && acceptedRes.ok && rejectedRes.ok) {
+    const [pending, accepted, rejected] = await Promise.all([
+      pendingRes.json(),
+      acceptedRes.json(),
+      rejectedRes.json(),
+    ]);
+
+    initialMetrics = {
+      pendingCount: pending.pagination?.total || 0,
+      acceptedTodayCount: 0, // TODO: Implement date-based filtering
+      rejectedTodayCount: 0, // TODO: Implement date-based filtering
+      totalSubmittedCount: pending.pagination?.total || 0,
+      totalReviewedCount: (accepted.pagination?.total || 0) + (rejected.pagination?.total || 0),
+    };
+  }
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error("Error fetching metrics:", err);
+  // Continue with default metrics - not critical
+}
+---
+
+<Layout title="Admin Review Queue - Badger">
+  <main class="min-h-screen bg-background">
+    <div class="container mx-auto px-4 py-8">
+      {
+        error ? (
+          <div class="mb-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
+            <p class="font-medium">Error loading review queue</p>
+            <p class="text-sm">{error}</p>
+          </div>
+        ) : null
+      }
+
+      <!-- AdminReviewView React Component with client-side interactivity -->
+      <AdminReviewView
+        client:load
+        initialData={initialData}
+        initialMetrics={initialMetrics}
+        adminUserId={adminUserId}
+      />
+    </div>
+  </main>
+</Layout>
+

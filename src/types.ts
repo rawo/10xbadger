@@ -610,6 +610,133 @@ export interface DashboardViewProps {
 }
 
 // =============================================================================
+// Admin Review Queue Types
+// =============================================================================
+
+/**
+ * Filter state for the admin review queue view
+ */
+export interface AdminReviewFilters {
+  status?: BadgeApplicationStatusType;
+  applicant_id?: string;
+  catalog_badge_id?: string;
+  sort: "submitted_at" | "created_at";
+  order: "asc" | "desc";
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Aggregated metrics for the admin review queue showing counts by status and time period
+ */
+export interface AdminReviewMetrics {
+  pendingCount: number; // submitted status
+  acceptedTodayCount: number; // accepted today
+  rejectedTodayCount: number; // rejected today
+  totalSubmittedCount: number; // all submitted applications
+  totalReviewedCount: number; // accepted + rejected
+}
+
+/**
+ * Props for the main AdminReviewView component
+ */
+export interface AdminReviewViewProps {
+  initialData: PaginatedResponse<BadgeApplicationListItemDto>;
+  initialMetrics: AdminReviewMetrics;
+  adminUserId: string;
+}
+
+/**
+ * Props for AdminPageHeader component
+ */
+export interface AdminPageHeaderProps {
+  title: string;
+  metrics: AdminReviewMetrics;
+  onMetricClick?: (status: BadgeApplicationStatusType) => void;
+}
+
+/**
+ * Props for AdminFilterBar component
+ */
+export interface AdminFilterBarProps {
+  filters: AdminReviewFilters;
+  onFilterChange: (filters: Partial<AdminReviewFilters>) => void;
+  resultCount: number;
+  hasActiveFilters: boolean;
+}
+
+/**
+ * Props for ReviewList component
+ */
+export interface ReviewListProps {
+  applications: BadgeApplicationListItemDto[];
+  isLoading?: boolean;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  onView: (id: string) => void;
+  adminUserId: string;
+}
+
+/**
+ * Props for ReviewRow component
+ */
+export interface ReviewRowProps {
+  application: BadgeApplicationListItemDto;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  onView: (id: string) => void;
+  isProcessing?: boolean;
+}
+
+/**
+ * Props for ReviewActions component
+ */
+export interface ReviewActionsProps {
+  applicationId: string;
+  status: BadgeApplicationStatusType;
+  onAccept: (id: string) => void;
+  onReject: (id: string) => void;
+  onView: (id: string) => void;
+  isProcessing?: boolean;
+}
+
+/**
+ * Props for ReviewModal component
+ */
+export interface ReviewModalProps {
+  isOpen: boolean;
+  mode: "accept" | "reject";
+  application: BadgeApplicationListItemDto | null;
+  onConfirm: (applicationId: string, decisionNote?: string) => Promise<void>;
+  onCancel: () => void;
+  isProcessing?: boolean;
+}
+
+/**
+ * Props for ApplicantInfo component
+ */
+export interface ApplicantInfoProps {
+  applicant: UserSummary;
+  size?: "sm" | "md" | "lg";
+}
+
+/**
+ * Props for AdminEmptyState component
+ */
+export interface AdminEmptyStateProps {
+  hasFilters: boolean;
+  activeFilterCount: number;
+  onClearFilters?: () => void;
+}
+
+/**
+ * Form data for the review decision modal
+ */
+export interface ReviewDecisionFormData {
+  decisionNote: string;
+}
+
+// =============================================================================
 // Badge Application Editor Types
 // =============================================================================
 
