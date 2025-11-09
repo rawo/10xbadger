@@ -1,0 +1,146 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { PromotionTemplatesView } from "@/components/promotion-templates/PromotionTemplatesView";
+import type { PaginatedResponse, PromotionTemplateListItemDto, ApiError } from "@/types";
+
+/**
+ * Promotion Templates List Page
+ *
+ * Server-side rendered page that displays a filterable, sortable, paginated list
+ * of promotion templates. All authenticated users can view templates; only admins
+ * can create, edit, and deactivate templates.
+ *
+ * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
+ * TODO: Re-enable authentication before production deployment
+ */
+
+// =========================================================================
+// DEVELOPMENT MODE: Authentication Disabled
+// =========================================================================
+// TODO: Re-enable authentication before production deployment
+// For now, we use a default user ID for development
+
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
+const isAdmin = false; // Default to non-admin for development
+
+// =========================================================================
+// PRODUCTION CODE (Currently Disabled)
+// =========================================================================
+// Uncomment the code below when authentication is ready:
+/*
+const supabase = Astro.locals.supabase;
+
+// Check authentication
+const { data: { user }, error: authError } = await supabase.auth.getUser();
+if (authError || !user) {
+  return Astro.redirect('/login');
+}
+
+// Get user info
+const { data: userData, error: userError } = await supabase
+  .from("users")
+  .select("is_admin")
+  .eq("id", user.id)
+  .single();
+
+if (userError || !userData) {
+  return Astro.redirect('/login');
+}
+
+const userId = user.id;
+const isAdmin = userData.is_admin;
+*/
+
+// =========================================================================
+// Parse Query Parameters with Defaults
+// =========================================================================
+
+const url = new URL(Astro.request.url);
+const path = url.searchParams.get("path") || undefined;
+const from_level = url.searchParams.get("from_level") || undefined;
+const to_level = url.searchParams.get("to_level") || undefined;
+const is_active = url.searchParams.get("is_active") || "true";
+const sort = url.searchParams.get("sort") || "name";
+const order = url.searchParams.get("order") || "asc";
+const limit = parseInt(url.searchParams.get("limit") || "20", 10);
+const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+
+// =========================================================================
+// Build API Query String
+// =========================================================================
+
+const queryParams = new URLSearchParams();
+if (path) queryParams.set("path", path);
+if (from_level) queryParams.set("from_level", from_level);
+if (to_level) queryParams.set("to_level", to_level);
+queryParams.set("is_active", is_active);
+queryParams.set("sort", sort);
+queryParams.set("order", order);
+queryParams.set("limit", limit.toString());
+queryParams.set("offset", offset.toString());
+
+const baseUrl = Astro.url.origin;
+const apiUrl = `${baseUrl}/api/promotion-templates?${queryParams.toString()}`;
+
+// =========================================================================
+// Fetch Initial Data
+// =========================================================================
+
+let initialData: PaginatedResponse<PromotionTemplateListItemDto> | null = null;
+let error: string | null = null;
+
+try {
+  const response = await fetch(apiUrl, {
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Redirect to login if unauthorized
+      return Astro.redirect("/login");
+    }
+
+    const errorData: ApiError = await response.json();
+    error = errorData.message || "Failed to load promotion templates";
+  } else {
+    initialData = await response.json();
+  }
+} catch (err) {
+  // eslint-disable-next-line no-console
+  console.error("Error fetching promotion templates:", err);
+  error = "An unexpected error occurred while loading promotion templates";
+}
+
+// If we have an error and no data, provide empty fallback
+if (!initialData) {
+  initialData = {
+    data: [],
+    pagination: {
+      total: 0,
+      limit,
+      offset,
+      has_more: false,
+    },
+  };
+}
+---
+
+<Layout title="Promotion Templates - Badger">
+  <main class="min-h-screen bg-background">
+    <div class="container mx-auto px-4 py-8">
+      {
+        error ? (
+          <div class="mb-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-destructive">
+            <p class="font-medium">Error loading promotion templates</p>
+            <p class="text-sm">{error}</p>
+          </div>
+        ) : null
+      }
+
+      <!-- PromotionTemplatesView React Component with client-side interactivity -->
+      <PromotionTemplatesView client:load initialData={initialData} userId={userId} isAdmin={isAdmin} />
+    </div>
+  </main>
+</Layout>

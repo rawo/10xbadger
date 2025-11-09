@@ -1039,3 +1039,138 @@ export interface ConfirmDeleteModalProps {
 export interface ReviewFormData {
   decisionNote: string;
 }
+
+// =============================================================================
+// Promotion Templates List View Types
+// =============================================================================
+
+/**
+ * Filter state for promotion templates list
+ */
+export interface TemplateFilters {
+  path?: PromotionPathType;
+  from_level?: string;
+  to_level?: string;
+  is_active: boolean;
+}
+
+/**
+ * Sort options for promotion templates list
+ */
+export interface TemplateSortOptions {
+  sort: "created_at" | "name";
+  order: "asc" | "desc";
+}
+
+/**
+ * Form data for creating/editing promotion templates
+ */
+export interface TemplateFormData {
+  name: string;
+  path: PromotionPathType;
+  from_level: string;
+  to_level: string;
+  rules: PromotionTemplateRule[];
+}
+
+/**
+ * Props for PromotionTemplatesView component
+ */
+export interface PromotionTemplatesViewProps {
+  initialData: PaginatedResponse<PromotionTemplateListItemDto>;
+  isAdmin: boolean;
+  userId: string;
+}
+
+/**
+ * Props for TemplateListHeader component
+ */
+export interface TemplateListHeaderProps {
+  isAdmin: boolean;
+  onCreateClick: () => void;
+}
+
+/**
+ * Props for TemplateFilterBar component
+ */
+export interface TemplateFilterBarProps {
+  filters: TemplateFilters;
+  sortOptions: TemplateSortOptions;
+  onFilterChange: (filters: TemplateFilters) => void;
+  onSortChange: (sortOptions: TemplateSortOptions) => void;
+}
+
+/**
+ * Props for TemplateGrid component
+ */
+export interface TemplateGridProps {
+  templates: PromotionTemplateListItemDto[];
+  isLoading: boolean;
+  isAdmin: boolean;
+  hasFilters: boolean;
+  onTemplateClick?: (id: string) => void;
+  onEditClick: (template: PromotionTemplateListItemDto) => void;
+  onDeactivateClick: (template: PromotionTemplateListItemDto) => void;
+  onCreateClick?: () => void;
+  onClearFilters?: () => void;
+}
+
+/**
+ * Props for TemplateCard component
+ */
+export interface TemplateCardProps {
+  template: PromotionTemplateListItemDto;
+  isAdmin: boolean;
+  onClick?: (id: string) => void;
+  onEdit: (template: PromotionTemplateListItemDto) => void;
+  onDeactivate: (template: PromotionTemplateListItemDto) => void;
+}
+
+/**
+ * Props for RulesList component
+ */
+export interface RulesListProps {
+  rules: PromotionTemplateRule[];
+  isCompact?: boolean;
+  className?: string;
+}
+
+/**
+ * Props for TemplateFormModal component
+ */
+export interface TemplateFormModalProps {
+  isOpen: boolean;
+  mode: "create" | "edit";
+  template?: PromotionTemplateListItemDto;
+  onClose: () => void;
+  onSubmit: (data: TemplateFormData) => Promise<void>;
+}
+
+/**
+ * Props for template ConfirmDeactivateModal component
+ */
+export interface TemplateConfirmDeactivateModalProps {
+  isOpen: boolean;
+  template: PromotionTemplateListItemDto | null;
+  onConfirm: () => Promise<void>;
+  onCancel: () => void;
+}
+
+/**
+ * Props for TemplateEmptyState component
+ */
+export interface TemplateEmptyStateProps {
+  hasFilters: boolean;
+  isAdmin: boolean;
+  onCreateClick?: () => void;
+  onClearFilters?: () => void;
+}
+
+/**
+ * Props for Pagination component
+ */
+export interface PaginationProps {
+  pagination: PaginationMetadata;
+  onPageChange: (offset: number) => void;
+  onPageSizeChange: (limit: number) => void;
+}
