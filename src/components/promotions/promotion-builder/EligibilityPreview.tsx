@@ -1,61 +1,111 @@
-import React, { useMemo } from "react";
-import type { PromotionTemplateRule, BadgeApplicationWithBadge } from "@/types";
+/**
+ * EligibilityPreview Component
+ *
+ * Displays real-time validation status showing which template requirements
+ * are satisfied and which are missing. Updates automatically when badges
+ * are added/removed.
+ */
 
-interface Props {
-  rules: PromotionTemplateRule[];
-  assignedBadges: BadgeApplicationWithBadge[];
-}
+import React from "react";
+import type { PromotionValidationResponse, EligibilityPreviewProps } from "@/types";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-export function EligibilityPreview({ rules, assignedBadges }: Props) {
-  // Build counts from assigned badges keyed by `${category}:${level}` and 'any' category
-  const counts = useMemo(() => {
-    const map = new Map<string, number>();
-    assignedBadges.forEach((ba) => {
-      const key = `${ba.catalog_badge.category}:${ba.catalog_badge.level}`;
-      map.set(key, (map.get(key) || 0) + 1);
-      // also increment any:level
-      const anyKey = `any:${ba.catalog_badge.level}`;
-      map.set(anyKey, (map.get(anyKey) || 0) + 1);
-    });
-    return map;
-  }, [assignedBadges]);
+export function EligibilityPreview({ validationResult, isLoading }: EligibilityPreviewProps) {
+  // =========================================================================
+  // Loading State
+  // =========================================================================
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Validating eligibility...</span>
+        </div>
+      </div>
+    );
+  }
 
-  const results = useMemo(() => {
-    return rules.map((r) => {
-      const key = `${r.category}:${r.level}`;
-      const satisfied = (counts.get(key) || 0) >= r.count;
-      const current = counts.get(key) || 0;
-      return { rule: r, current, satisfied };
-    });
-  }, [rules, counts]);
+  // =========================================================================
+  // No Validation Data
+  // =========================================================================
+  if (!validationResult) {
+    return (
+      <div className="space-y-3">
+        <div className="text-sm text-muted-foreground">
+          Validation data not available
+        </div>
+      </div>
+    );
+  }
 
-  const isValid = results.every((r) => r.satisfied);
+  // =========================================================================
+  // Display Validation Results
+  // =========================================================================
+  const isValid = validationResult.is_valid;
 
   return (
     <div className="space-y-3">
-      <div className="text-sm mb-2">
-        <span className="font-medium">Overall:</span>{" "}
-        <span className={isValid ? "text-success" : "text-warning"}>
-          {isValid ? "Requirements satisfied" : "Missing badges"}
-        </span>
+      {/* Overall Status */}
+      <div className="flex items-center gap-2 text-sm mb-2">
+        {isValid ? (
+          <>
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <span className="font-medium text-green-600">Eligible for Submission</span>
+          </>
+        ) : (
+          <>
+            <XCircle className="h-5 w-5 text-yellow-600" />
+            <span className="font-medium text-yellow-600">Missing Requirements</span>
+          </>
+        )}
       </div>
+
+      {/* Requirements List */}
       <ul className="space-y-2 text-sm">
-        {results.map((res, idx) => (
-          <li key={idx} className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">
-                {res.rule.count}× {res.rule.category === "any" ? "Any" : res.rule.category} • {res.rule.level}
+        {validationResult.requirements.map((req, idx) => (
+          <li
+            key={idx}
+            className={`flex items-center justify-between p-2 rounded-md border ${
+              req.satisfied ? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950" : "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950"
+            }`}
+          >
+            <div className="flex-1">
+              <div className="font-medium text-foreground">
+                {req.required}× {req.category === "any" ? "Any Category" : req.category} • {req.level}
               </div>
               <div className="text-xs text-muted-foreground">
-                {res.current} / {res.rule.count} collected
+                {req.current} / {req.required} assigned
               </div>
             </div>
-            <div className="text-sm">{res.satisfied ? "✓" : "—"}</div>
+            <div className="ml-2">
+              {req.satisfied ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <XCircle className="h-4 w-4 text-yellow-600" />
+              )}
+            </div>
           </li>
         ))}
       </ul>
+
+      {/* Missing Badges Summary */}
+      {!isValid && validationResult.missing && validationResult.missing.length > 0 && (
+        <div className="mt-4 p-3 rounded-md bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-900">
+          <div className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+            Still Needed:
+          </div>
+          <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+            {validationResult.missing.map((m, idx) => (
+              <li key={idx}>
+                • {m.count}× {m.category === "any" ? "Any Category" : m.category} • {m.level}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
+
 
 

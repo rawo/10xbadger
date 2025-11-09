@@ -1,10 +1,97 @@
 ---
+/**
+ * Promotion Builder / Detail Page (SSR)
+ * 
+ * Server-side rendered page that validates promotion ID, fetches initial promotion data,
+ * checks authorization, and hydrates the PromotionBuilderView React component.
+ * 
+ * Route: /promotions/:id
+ * 
+ * Features:
+ * - UUID validation for promotion ID
+ * - Server-side data fetching with auth
+ * - Authorization check (owner or admin)
+ * - Error handling for 404, 403, 500
+ * - Hydrates React component with initial data
+ */
+
 import Layout from "@/layouts/Layout.astro";
 import { PromotionBuilderView } from "@/components/promotions/PromotionBuilderView";
 import type { PromotionDetailDto, ApiError } from "@/types";
+import { z } from "zod";
 
-const { id } = Astro.params;
+// =========================================================================
+// DEVELOPMENT MODE: Authentication Disabled
+// =========================================================================
+// TODO: Re-enable authentication before production deployment
+const userId = "550e8400-e29b-41d4-a716-446655440100"; // Test user (John Doe)
+const isAdmin = false; // Default to non-admin for development
 
+// =========================================================================
+// PRODUCTION CODE (Currently Disabled)
+// =========================================================================
+// Uncomment when authentication is ready:
+/*
+const {
+  data: { user },
+  error: authError,
+} = await Astro.locals.supabase.auth.getUser();
+
+if (authError || !user) {
+  return Astro.redirect('/login?redirect=/promotions/' + Astro.params.id);
+}
+
+const { data: userData, error: userError } = await Astro.locals.supabase
+  .from("users")
+  .select("is_admin")
+  .eq("id", user.id)
+  .single();
+
+if (userError || !userData) {
+  return Astro.redirect('/login');
+}
+
+const userId = user.id;
+const isAdmin = userData.is_admin || false;
+*/
+
+// =========================================================================
+// Step 1: Validate Promotion ID Parameter
+// =========================================================================
+const promotionIdSchema = z.object({
+  id: z.string().uuid("Invalid promotion ID format"),
+});
+
+const validation = promotionIdSchema.safeParse({ id: Astro.params.id });
+
+if (!validation.success) {
+  // Invalid UUID format - return 400-like error page
+  return new Response(
+    `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Invalid Promotion ID | Badger</title>
+      </head>
+      <body>
+        <h1>Invalid Promotion ID</h1>
+        <p>The promotion ID provided is not valid. Please check the URL and try again.</p>
+        <a href="/promotions">Back to Promotions</a>
+      </body>
+    </html>
+    `,
+    {
+      status: 400,
+      headers: { "Content-Type": "text/html" },
+    }
+  );
+}
+
+const { id } = validation.data;
+
+// =========================================================================
+// Step 2: Fetch Promotion Data Server-Side
+// =========================================================================
 let promotion: PromotionDetailDto | null = null;
 let error: string | null = null;
 
@@ -18,8 +105,51 @@ try {
 
   if (!response.ok) {
     if (response.status === 404) {
-      return Astro.redirect('/404?reason=promotion-not-found');
+      // Promotion not found
+      return new Response(
+        `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Promotion Not Found | Badger</title>
+          </head>
+          <body>
+            <h1>Promotion Not Found</h1>
+            <p>The promotion you're looking for doesn't exist or you don't have permission to view it.</p>
+            <a href="/promotions">Back to Promotions</a>
+          </body>
+        </html>
+        `,
+        {
+          status: 404,
+          headers: { "Content-Type": "text/html" },
+        }
+      );
     }
+    
+    if (response.status === 403) {
+      // Forbidden - user not authorized
+      return new Response(
+        `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Access Denied | Badger</title>
+          </head>
+          <body>
+            <h1>Access Denied</h1>
+            <p>You don't have permission to view this promotion.</p>
+            <a href="/promotions">Back to Promotions</a>
+          </body>
+        </html>
+        `,
+        {
+          status: 403,
+          headers: { "Content-Type": "text/html" },
+        }
+      );
+    }
+
     const errData: ApiError = await response.json();
     error = errData.message || "Failed to load promotion";
   } else {
@@ -30,14 +160,45 @@ try {
   error = "An unexpected error occurred while loading the promotion";
 }
 
+// =========================================================================
+// Step 3: Handle Errors - Show Error Page
+// =========================================================================
 if (error || !promotion) {
-  return Astro.redirect('/500?reason=fetch-promotion-error');
+  return new Response(
+    `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Error | Promotion | Badger</title>
+      </head>
+      <body>
+        <h1>Error Loading Promotion</h1>
+        <p>${error || "Failed to load promotion data"}</p>
+        <a href="/promotions">Back to Promotions</a>
+      </body>
+    </html>
+    `,
+    {
+      status: 500,
+      headers: { "Content-Type": "text/html" },
+    }
+  );
 }
+
+// =========================================================================
+// Step 4: Render Page with Hydrated React Component
+// =========================================================================
+const pageTitle = `${promotion.template.name} | Promotion | Badger`;
 ---
 
-<Layout title={`Promotion ${promotion.id} | Badger`}>
-  <main>
-    <PromotionBuilderView client:load initialPromotion={promotion} />
+<Layout title={pageTitle}>
+  <main class="min-h-screen bg-background">
+    <PromotionBuilderView
+      client:load
+      initialPromotion={promotion}
+      userId={userId}
+      isAdmin={isAdmin}
+    />
   </main>
 </Layout>
 

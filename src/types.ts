@@ -1233,3 +1233,109 @@ export interface UseTemplateCardProps {
 export interface ActionLoadingProps {
   isLoading?: boolean;
 }
+
+// =============================================================================
+// Promotion Builder / Detail View Types
+// =============================================================================
+
+/**
+ * Props for PromotionBuilderView component
+ */
+export interface PromotionBuilderViewProps {
+  initialPromotion: PromotionDetailDto;
+  userId: string;
+  isAdmin: boolean;
+}
+
+/**
+ * Props for BuilderHeader component
+ */
+export interface BuilderHeaderProps {
+  templateName: string;
+  promotionId: string;
+  status: PromotionStatusType;
+}
+
+/**
+ * Props for PromotionMetadataCard component
+ */
+export interface PromotionMetadataCardProps {
+  template: PromotionTemplateDetail;
+  creator: UserSummary;
+  status: PromotionStatusType;
+  createdAt: string;
+  submittedAt: string | null;
+  approvedAt: string | null;
+  rejectedAt: string | null;
+  rejectReason: string | null;
+}
+
+/**
+ * Props for EligibilityPreview component
+ */
+export interface EligibilityPreviewProps {
+  validationResult: PromotionValidationResponse | null;
+  isLoading: boolean;
+}
+
+/**
+ * Props for RequirementRow component
+ */
+export interface RequirementRowProps {
+  requirement: PromotionRequirement;
+}
+
+/**
+ * Props for BadgesList component
+ */
+export interface BadgesListProps {
+  badges: BadgeApplicationWithBadge[];
+  isDraft: boolean;
+  onRemoveBadge: (badgeId: string) => void;
+  isRemoving: boolean;
+}
+
+/**
+ * Props for BadgeListItem component
+ */
+export interface BadgeListItemProps {
+  badge: BadgeApplicationWithBadge;
+  isDraft: boolean;
+  onRemove: (badgeId: string) => void;
+  isRemoving: boolean;
+}
+
+/**
+ * Props for BadgePicker component
+ */
+export interface BadgePickerProps {
+  userId: string;
+  existingBadgeIds: string[];
+  onAddBadges: (badgeIds: string[]) => void;
+  isAdding: boolean;
+}
+
+/**
+ * Props for ActionBar component (promotion builder)
+ */
+export interface PromotionActionBarProps {
+  status: PromotionStatusType;
+  isValid: boolean;
+  isSubmitting: boolean;
+  onSubmit: () => void;
+  onDelete: () => void;
+  onBack: () => void;
+  canEdit: boolean;
+}
+
+/**
+ * Props for ConflictModal component
+ */
+export interface ConflictModalProps {
+  isOpen: boolean;
+  conflictError: ReservationConflictError | null;
+  onRetry: () => void;
+  onClose: () => void;
+  onNavigateToOwner: (promotionId: string) => void;
+}
+
