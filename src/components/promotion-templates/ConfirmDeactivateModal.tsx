@@ -16,6 +16,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
 import type { TemplateConfirmDeactivateModalProps } from "@/types";
 
 export function ConfirmDeactivateModal({ isOpen, template, onConfirm, onCancel }: TemplateConfirmDeactivateModalProps) {
@@ -55,8 +56,9 @@ export function ConfirmDeactivateModal({ isOpen, template, onConfirm, onCancel }
             onClick={handleConfirm}
             disabled={isConfirming}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            aria-busy={isConfirming}
           >
-            {isConfirming ? "Deactivating..." : "Deactivate"}
+            {isConfirming ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deactivating...</> : "Deactivate"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

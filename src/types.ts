@@ -1174,3 +1174,62 @@ export interface PaginationProps {
   onPageChange: (offset: number) => void;
   onPageSizeChange: (limit: number) => void;
 }
+
+// =============================================================================
+// Promotion Templates Detail View Types
+// =============================================================================
+
+/**
+ * Props for TemplateDetailView component
+ */
+export interface TemplateDetailViewProps {
+  initialTemplate: PromotionTemplateDetailDto;
+  isAdmin: boolean;
+  userId: string;
+}
+
+/**
+ * Props for TemplateDetailHeader component
+ */
+export interface TemplateDetailHeaderProps {
+  templateName: string;
+  isAdmin: boolean;
+  isActive: boolean;
+  onEditClick: () => void;
+  onDeactivateClick: () => void;
+  isLoading?: boolean;
+}
+
+/**
+ * Props for TemplateOverviewCard component
+ */
+export interface TemplateOverviewCardProps {
+  template: PromotionTemplateDetailDto;
+}
+
+/**
+ * Props for TemplateRulesDetailCard component
+ */
+export interface TemplateRulesDetailCardProps {
+  rules: PromotionTemplateRule[];
+}
+
+/**
+ * Props for UseTemplateCard component
+ */
+export interface UseTemplateCardProps {
+  templateId: string;
+  templateName: string;
+  templatePath: PromotionPathType;
+  fromLevel: string;
+  toLevel: string;
+  rulesCount: number;
+  isActive: boolean;
+  onUseTemplate: () => void;
+  isLoading?: boolean;
+}
+
+// Optional prop to indicate async loading state for header/use-card actions
+export interface ActionLoadingProps {
+  isLoading?: boolean;
+}

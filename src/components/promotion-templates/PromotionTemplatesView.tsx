@@ -183,9 +183,9 @@ export function PromotionTemplatesView(props: PromotionTemplatesViewProps) {
    */
 
   const _handleTemplateClick = (id: string) => {
-    // TODO: Navigate to template detail page when implemented
-    // For now, do nothing or show a toast
-    toast.info(`Template detail view not yet implemented. ID: ${id}`);
+    // Navigate to the template detail page
+    // Use full path so Astro SSR route handles the request
+    window.location.href = `/promotion-templates/${id}`;
   };
 
   /**

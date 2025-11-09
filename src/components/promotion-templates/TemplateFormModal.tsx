@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 import type {
   TemplateFormModalProps,
   TemplateFormData,
@@ -199,6 +200,15 @@ export function TemplateFormModal({ isOpen, mode, template, onClose, onSubmit }:
       toast.success(mode === "create" ? "Template created successfully" : "Template updated successfully");
       onClose();
     } catch (err) {
+      // Handle server-side validation errors attached by parent handler
+      const errorDetails = (err as any)?.details;
+      if (Array.isArray(errorDetails)) {
+        const serverErrors = mapApiValidationDetails(errorDetails);
+        setErrors(serverErrors);
+        toast.error("Please fix validation errors");
+        return;
+      }
+
       const message = err instanceof Error ? err.message : "An error occurred";
       toast.error(message);
       setErrors({ name: message });
@@ -442,12 +452,25 @@ export function TemplateFormModal({ isOpen, mode, template, onClose, onSubmit }:
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!isFormValid || isSubmitting}>
-              {isSubmitting ? "Saving..." : mode === "create" ? "Create Template" : "Save Changes"}
+            <Button type="submit" disabled={!isFormValid || isSubmitting} aria-busy={isSubmitting}>
+              {isSubmitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : mode === "create" ? "Create Template" : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
+}
+
+/**
+ * Map API validation details to the modal's ValidationErrors shape.
+ * Exposed for unit testing.
+ */
+export function mapApiValidationDetails(details: Array<{ field: string; message: string }>) {
+  const serverErrors: ValidationErrors = {};
+  details.forEach((d) => {
+    const fieldKey = d.field as keyof ValidationErrors;
+    serverErrors[fieldKey] = d.message;
+  });
+  return serverErrors;
 }

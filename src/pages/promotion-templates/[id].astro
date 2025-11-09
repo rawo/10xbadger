@@ -1,0 +1,65 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { TemplateDetailView } from "@/components/promotion-templates/TemplateDetailView";
+import type { PromotionTemplateDetailDto, ApiError } from "@/types";
+import { z } from "zod";
+
+// =========================================================================
+// DEVELOPMENT MODE: Authentication Disabled
+// =========================================================================
+const userId = "550e8400-e29b-41d4-a716-446655440100";
+const isAdmin = false;
+
+// Validate Route Parameter
+const uuidSchema = z.string().uuid();
+const { id } = Astro.params;
+const validation = uuidSchema.safeParse(id);
+if (!validation.success) {
+  return Astro.redirect('/404?reason=invalid-id');
+}
+
+// Fetch Template Data
+const baseUrl = Astro.url.origin;
+const apiUrl = `${baseUrl}/api/promotion-templates/${id}`;
+
+let template: PromotionTemplateDetailDto | null = null;
+let error: string | null = null;
+
+try {
+  const response = await fetch(apiUrl, {
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return Astro.redirect('/404?reason=template-not-found');
+    }
+    const errorData: ApiError = await response.json();
+    error = errorData.message || "Failed to load template";
+  } else {
+    template = await response.json();
+  }
+} catch (err) {
+  console.error("Error fetching template:", err);
+  error = "An unexpected error occurred while loading the template";
+}
+
+if (error || !template) {
+  return Astro.redirect('/500?reason=fetch-error');
+}
+---
+
+<Layout title={`${template.name} | Promotion Templates | Badger`}>
+  <main class="min-h-screen bg-background">
+    <TemplateDetailView
+      client:load
+      initialTemplate={template}
+      userId={userId}
+      isAdmin={isAdmin}
+    />
+  </main>
+</Layout>
+
+
