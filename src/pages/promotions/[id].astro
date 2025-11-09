@@ -1,0 +1,44 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { PromotionBuilderView } from "@/components/promotions/PromotionBuilderView";
+import type { PromotionDetailDto, ApiError } from "@/types";
+
+const { id } = Astro.params;
+
+let promotion: PromotionDetailDto | null = null;
+let error: string | null = null;
+
+try {
+  const baseUrl = Astro.url.origin;
+  const response = await fetch(`${baseUrl}/api/promotions/${id}`, {
+    headers: {
+      Cookie: Astro.request.headers.get("Cookie") || "",
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      return Astro.redirect('/404?reason=promotion-not-found');
+    }
+    const errData: ApiError = await response.json();
+    error = errData.message || "Failed to load promotion";
+  } else {
+    promotion = await response.json();
+  }
+} catch (err) {
+  console.error("Error fetching promotion:", err);
+  error = "An unexpected error occurred while loading the promotion";
+}
+
+if (error || !promotion) {
+  return Astro.redirect('/500?reason=fetch-promotion-error');
+}
+---
+
+<Layout title={`Promotion ${promotion.id} | Badger`}>
+  <main>
+    <PromotionBuilderView client:load initialPromotion={promotion} />
+  </main>
+</Layout>
+
+

@@ -1,0 +1,15 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { PromotionCreateView } from "@/components/promotions/PromotionCreateView";
+
+const url = new URL(Astro.request.url);
+const templateId = url.searchParams.get("template_id") || undefined;
+---
+
+<Layout title="Create Promotion | Badger">
+  <main>
+    <PromotionCreateView client:load templateId={templateId} />
+  </main>
+</Layout>
+
+
