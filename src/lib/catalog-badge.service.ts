@@ -108,9 +108,15 @@ export class CatalogBadgeService {
       has_more: query.offset + query.limit < total,
     };
 
+    // Transform to add computed active field to each badge
+    const transformedData = (data || []).map((badge) => ({
+      ...badge,
+      active: badge.status === "active",
+    })) as CatalogBadgeListItemDto[];
+
     // Return paginated response
     return {
-      data: data as CatalogBadgeListItemDto[],
+      data: transformedData,
       pagination,
     };
   }
@@ -134,7 +140,11 @@ export class CatalogBadgeService {
       throw new Error(`Failed to fetch catalog badge: ${error.message}`);
     }
 
-    return data as CatalogBadgeDetailDto;
+    // Transform to add computed active field
+    return {
+      ...data,
+      active: data.status === "active",
+    } as CatalogBadgeDetailDto;
   }
 
   /**
@@ -165,7 +175,11 @@ export class CatalogBadgeService {
       throw new Error(`Failed to create catalog badge: ${error.message}`);
     }
 
-    return data as CatalogBadgeDetailDto;
+    // Transform to add computed active field
+    return {
+      ...data,
+      active: data.status === "active",
+    } as CatalogBadgeDetailDto;
   }
 
   /**
@@ -220,6 +234,7 @@ export class CatalogBadgeService {
       ...badge,
       status: "inactive",
       deactivated_at: deactivatedAt,
+      active: false, // Computed from status
     } as CatalogBadgeDetailDto;
   }
 }

@@ -187,10 +187,12 @@ export type UserDto = UserRow;
 // =============================================================================
 
 /**
- * Catalog badge DTO with typed rules field
+ * Catalog badge DTO with typed rules field and computed active field
  * Used for list and detail responses
  */
-export type CatalogBadgeDto = CatalogBadgeRow;
+export type CatalogBadgeDto = CatalogBadgeRow & {
+  active: boolean; // Computed from status === 'active'
+};
 
 /**
  * List item for catalog badges (GET /api/catalog-badges)
