@@ -1,0 +1,36 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { LoginView } from "@/components/auth/LoginView";
+
+/**
+ * Login Page
+ *
+ * Entry point for authentication. Displays Google Sign-In button and handles
+ * error/success messages from query parameters.
+ *
+ * Query Parameters:
+ * - error: Error code to display (e.g., invalid_domain, auth_failed, session_expired)
+ * - message: Success message to display (e.g., logged_out)
+ * - redirect: URL to redirect to after successful authentication
+ */
+
+const error = Astro.url.searchParams.get("error") || undefined;
+const message = Astro.url.searchParams.get("message") || undefined;
+const redirectUrl = Astro.url.searchParams.get("redirect") || "/";
+
+// TODO: Check if user is already authenticated and redirect to dashboard
+// This will be implemented when authentication backend is ready
+/*
+const supabase = Astro.locals.supabase;
+const { data: { session } } = await supabase.auth.getSession();
+
+if (session) {
+  return Astro.redirect(redirectUrl);
+}
+*/
+---
+
+<Layout title="Sign In - 10xbadger">
+  <LoginView client:load error={error} message={message} redirectUrl={redirectUrl} />
+</Layout>
+

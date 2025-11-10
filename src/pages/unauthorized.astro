@@ -1,0 +1,81 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+
+/**
+ * Unauthorized Access Page
+ *
+ * Displayed when a user attempts to sign in with an email domain that
+ * is not authorized to access the application.
+ *
+ * Query Parameters:
+ * - domain: The unauthorized email domain (optional, for display)
+ */
+
+const domain = Astro.url.searchParams.get("domain") || "your email domain";
+---
+
+<Layout title="Access Denied - 10xbadger">
+  <div class="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <div class="w-full max-w-md space-y-6">
+      <!-- Logo and App Name -->
+      <div class="text-center space-y-2">
+        <div class="mx-auto flex size-16 items-center justify-center rounded-2xl bg-destructive/10">
+          <svg
+            class="size-10 text-destructive"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            ></path>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-foreground">Access Denied</h1>
+      </div>
+
+      <!-- Unauthorized Message Card -->
+      <Card>
+        <CardHeader>
+          <CardTitle>Unauthorized Domain</CardTitle>
+          <CardDescription>
+            The email domain <span class="font-medium text-foreground">@{domain}</span> is not authorized to access this
+            application.
+          </CardDescription>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="text-muted-foreground space-y-2 text-sm">
+            <p>This application is restricted to authorized company domains only.</p>
+            <p>If you believe this is an error or need access, please:</p>
+            <ul class="ml-4 list-disc space-y-1">
+              <li>Contact your system administrator</li>
+              <li>Verify you're using your company email address</li>
+              <li>Request access from your IT department</li>
+            </ul>
+          </div>
+
+          <div class="flex flex-col gap-2 pt-2">
+            <Button asChild>
+              <a href="/login">Back to Sign In</a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="mailto:support@company.com?subject=Access Request for 10xbadger">Contact Support</a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Help Text -->
+      <p class="text-muted-foreground text-center text-xs">
+        For security reasons, access is limited to authorized email domains.
+      </p>
+    </div>
+  </div>
+</Layout>
+
