@@ -3,11 +3,11 @@
  *
  * Individual table row displaying promotion details and actions.
  * Shows status badge, badge count, dates, and context menu for actions.
- * 
+ *
  * Keyboard Navigation:
  * - Enter or Space: Open promotion detail
  * - Delete: Remove draft promotion (if owner)
- * 
+ *
  * Accessibility:
  * - Focusable with tabIndex
  * - ARIA role="button" for screen readers
@@ -215,12 +215,9 @@ export function PromotionRow({
           )}
 
           {/* No Actions Available */}
-          {!canDelete && !canApprove && !canReject && (
-            <span className="text-sm text-muted-foreground">—</span>
-          )}
+          {!canDelete && !canApprove && !canReject && <span className="text-sm text-muted-foreground">—</span>}
         </div>
       </td>
     </tr>
   );
 }
-

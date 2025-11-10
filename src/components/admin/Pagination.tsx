@@ -33,10 +33,7 @@ export function Pagination(props: PaginationProps) {
   return (
     <div className="flex items-center justify-between">
       <div className="text-sm text-muted-foreground">
-        Showing{" "}
-        <span className="font-medium text-foreground">
-          {pagination.offset + 1}
-        </span>
+        Showing <span className="font-medium text-foreground">{pagination.offset + 1}</span>
         {" - "}
         <span className="font-medium text-foreground">
           {Math.min(pagination.offset + pagination.limit, pagination.total)}
@@ -47,12 +44,7 @@ export function Pagination(props: PaginationProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrevious}
-          disabled={isFirstPage}
-        >
+        <Button variant="outline" size="sm" onClick={handlePrevious} disabled={isFirstPage}>
           <ChevronLeft className="h-4 w-4 mr-1" />
           Previous
         </Button>
@@ -61,12 +53,7 @@ export function Pagination(props: PaginationProps) {
           Page {currentPage} of {totalPages}
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNext}
-          disabled={isLastPage}
-        >
+        <Button variant="outline" size="sm" onClick={handleNext} disabled={isLastPage}>
           Next
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
@@ -74,4 +61,3 @@ export function Pagination(props: PaginationProps) {
     </div>
   );
 }
-

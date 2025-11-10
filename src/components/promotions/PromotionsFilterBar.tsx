@@ -132,12 +132,9 @@ export function PromotionsFilterBar({ filters, onFilterChange, resultCount }: Pr
 
         {/* Results Count */}
         <div className="text-sm text-muted-foreground">
-          {resultCount === 0
-            ? "No promotions found"
-            : `${resultCount} promotion${resultCount === 1 ? "" : "s"} found`}
+          {resultCount === 0 ? "No promotions found" : `${resultCount} promotion${resultCount === 1 ? "" : "s"} found`}
         </div>
       </div>
     </div>
   );
 }
-

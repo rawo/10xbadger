@@ -24,9 +24,7 @@ describe("TemplateFormModal integration", () => {
       throw err;
     });
 
-    render(
-      <TemplateFormModal isOpen={true} mode="edit" template={template} onClose={onClose} onSubmit={onSubmit} />
-    );
+    render(<TemplateFormModal isOpen={true} mode="edit" template={template} onClose={onClose} onSubmit={onSubmit} />);
 
     // Ensure Save Changes button is present
     const submitButton = screen.getByRole("button", { name: /save changes/i });
@@ -41,5 +39,3 @@ describe("TemplateFormModal integration", () => {
     });
   });
 });
-
-

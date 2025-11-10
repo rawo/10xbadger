@@ -68,22 +68,22 @@ export function TemplateOverviewCard({ template }: TemplateOverviewCardProps) {
           <span className="text-base font-medium text-foreground">{formatDate((template as any).created_at)}</span>
         </div>
 
-        {((template as any).updated_at) && (
+        {(template as any).updated_at && (
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-muted-foreground">Last Updated</span>
             <span className="text-base font-medium text-foreground">{formatDate((template as any).updated_at)}</span>
           </div>
         )}
 
-        {((template as any).deactivated_at) && (
+        {(template as any).deactivated_at && (
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-muted-foreground">Deactivated</span>
-            <span className="text-base font-medium text-destructive">{formatDate((template as any).deactivated_at)}</span>
+            <span className="text-base font-medium text-destructive">
+              {formatDate((template as any).deactivated_at)}
+            </span>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-
-

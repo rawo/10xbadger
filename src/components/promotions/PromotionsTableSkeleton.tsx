@@ -23,9 +23,7 @@ export function PromotionsTableSkeleton({ rows = 5, isAdmin = false }: Promotion
               <th className="text-left p-4 font-medium text-sm text-foreground">Status</th>
               <th className="text-left p-4 font-medium text-sm text-foreground">Badges</th>
               <th className="text-left p-4 font-medium text-sm text-foreground">Created</th>
-              {isAdmin && (
-                <th className="text-left p-4 font-medium text-sm text-foreground">Creator</th>
-              )}
+              {isAdmin && <th className="text-left p-4 font-medium text-sm text-foreground">Creator</th>}
               <th className="text-right p-4 font-medium text-sm text-foreground">Actions</th>
             </tr>
           </thead>
@@ -78,4 +76,3 @@ export function PromotionsTableSkeleton({ rows = 5, isAdmin = false }: Promotion
     </div>
   );
 }
-

@@ -3,7 +3,7 @@
  *
  * Main orchestration component for the promotions list view.
  * Manages state, filters, pagination, and coordinates all child components.
- * 
+ *
  * Features:
  * - Server-side initial data fetch with URL-based filters
  * - Client-side filter updates with URL persistence
@@ -32,12 +32,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import type {
-  PromotionListItemDto,
-  PaginatedResponse,
-  PaginationMetadata,
-  ApiError,
-} from "@/types";
+import type { PromotionListItemDto, PaginatedResponse, PaginationMetadata, ApiError } from "@/types";
 
 export interface PromotionsListViewProps {
   initialData: PaginatedResponse<PromotionListItemDto>;
@@ -316,11 +311,7 @@ export function PromotionsListView(props: PromotionsListViewProps) {
       <PromotionsHeader isAdmin={isAdmin} onCreateClick={handleCreateClick} />
 
       {/* Filter Bar */}
-      <PromotionsFilterBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={pagination.total}
-      />
+      <PromotionsFilterBar filters={filters} onFilterChange={handleFilterChange} resultCount={pagination.total} />
 
       {/* Promotions Table */}
       <PromotionsTable
@@ -338,9 +329,7 @@ export function PromotionsListView(props: PromotionsListViewProps) {
       />
 
       {/* Pagination */}
-      {!isLoading && promotions.length > 0 && (
-        <Pagination pagination={pagination} onPageChange={handlePageChange} />
-      )}
+      {!isLoading && promotions.length > 0 && <Pagination pagination={pagination} onPageChange={handlePageChange} />}
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
@@ -383,4 +372,3 @@ export function PromotionsListView(props: PromotionsListViewProps) {
     </div>
   );
 }
-

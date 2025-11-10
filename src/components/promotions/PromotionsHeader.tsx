@@ -31,9 +31,7 @@ export function PromotionsHeader({ isAdmin, onCreateClick }: PromotionsHeaderPro
         <div className="flex-1">
           <h1 className="text-3xl font-bold text-foreground">Promotions</h1>
           <p className="text-muted-foreground mt-1">
-            {isAdmin
-              ? "Manage all promotion submissions and drafts"
-              : "View and manage your promotion submissions"}
+            {isAdmin ? "Manage all promotion submissions and drafts" : "View and manage your promotion submissions"}
           </p>
         </div>
 
@@ -48,4 +46,3 @@ export function PromotionsHeader({ isAdmin, onCreateClick }: PromotionsHeaderPro
     </div>
   );
 }
-

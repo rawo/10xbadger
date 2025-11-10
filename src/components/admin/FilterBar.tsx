@@ -112,21 +112,13 @@ export function FilterBar(props: AdminFilterBarProps) {
           {filters.status && filters.status !== "all" && (
             <span>
               {" "}
-              with status{" "}
-              <span className="font-medium text-foreground">
-                {filters.status}
-              </span>
+              with status <span className="font-medium text-foreground">{filters.status}</span>
             </span>
           )}
         </div>
 
         {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearFilters}
-            className="h-8 px-2 text-xs"
-          >
+          <Button variant="ghost" size="sm" onClick={handleClearFilters} className="h-8 px-2 text-xs">
             <X className="h-3 w-3 mr-1" />
             Clear filters
           </Button>
@@ -168,4 +160,3 @@ export function FilterBar(props: AdminFilterBarProps) {
     </div>
   );
 }
-

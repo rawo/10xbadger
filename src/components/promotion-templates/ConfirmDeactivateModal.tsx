@@ -58,7 +58,14 @@ export function ConfirmDeactivateModal({ isOpen, template, onConfirm, onCancel }
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             aria-busy={isConfirming}
           >
-            {isConfirming ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Deactivating...</> : "Deactivate"}
+            {isConfirming ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Deactivating...
+              </>
+            ) : (
+              "Deactivate"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

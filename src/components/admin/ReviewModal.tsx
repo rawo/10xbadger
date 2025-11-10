@@ -74,20 +74,14 @@ export function ReviewModal(props: ReviewModalProps) {
             <p className="font-medium">{application.catalog_badge.title}</p>
           </div>
           <div className="flex gap-2 text-xs">
-            <span className="px-2 py-1 rounded-md bg-background border">
-              {application.catalog_badge.category}
-            </span>
-            <span className="px-2 py-1 rounded-md bg-background border">
-              {application.catalog_badge.level}
-            </span>
+            <span className="px-2 py-1 rounded-md bg-background border">{application.catalog_badge.category}</span>
+            <span className="px-2 py-1 rounded-md bg-background border">{application.catalog_badge.level}</span>
           </div>
         </div>
 
         {/* Decision Note Field */}
         <div className="space-y-2">
-          <Label htmlFor="decision-note">
-            Decision Note {isAccept ? "(Optional)" : "(Recommended)"}
-          </Label>
+          <Label htmlFor="decision-note">Decision Note {isAccept ? "(Optional)" : "(Recommended)"}</Label>
           <textarea
             id="decision-note"
             value={decisionNote}
@@ -101,30 +95,16 @@ export function ReviewModal(props: ReviewModalProps) {
             className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-ring"
             disabled={isProcessing}
           />
-          <p
-            className={`text-xs ${
-              remaining < 100 ? "text-orange-500" : "text-muted-foreground"
-            }`}
-          >
+          <p className={`text-xs ${remaining < 100 ? "text-orange-500" : "text-muted-foreground"}`}>
             {remaining} characters remaining
           </p>
         </div>
 
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isProcessing}
-          >
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={isProcessing}>
             Cancel
           </Button>
-          <Button
-            type="button"
-            variant={buttonVariant}
-            onClick={handleConfirm}
-            disabled={!isValid || isProcessing}
-          >
+          <Button type="button" variant={buttonVariant} onClick={handleConfirm} disabled={!isValid || isProcessing}>
             {isProcessing ? "Processing..." : confirmLabel}
           </Button>
         </DialogFooter>
@@ -132,4 +112,3 @@ export function ReviewModal(props: ReviewModalProps) {
     </Dialog>
   );
 }
-

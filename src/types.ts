@@ -1465,4 +1465,3 @@ export interface ConflictModalProps {
   onClose: () => void;
   onNavigateToOwner: (promotionId: string) => void;
 }
-

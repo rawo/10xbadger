@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type {
-  TemplateDetailViewProps,
-  PromotionTemplateDetailDto,
-  TemplateFormData,
-  ApiError,
-} from "@/types";
+import type { TemplateDetailViewProps, PromotionTemplateDetailDto, TemplateFormData, ApiError } from "@/types";
 import { TemplateDetailHeader } from "./TemplateDetailHeader";
 import { TemplateOverviewCard } from "./TemplateOverviewCard";
 import { TemplateRulesDetailCard } from "./TemplateRulesDetailCard";
@@ -37,47 +32,52 @@ export function TemplateDetailView(props: TemplateDetailViewProps) {
     window.location.href = `/promotions/new?template_id=${template.id}`;
   }, [template.id]);
 
-  const handleEditSubmit = useCallback(async (data: TemplateFormData) => {
-    setIsLoading(true);
-    try {
-      const updateData = {
-        name: data.name,
-        rules: data.rules,
-      };
+  const handleEditSubmit = useCallback(
+    async (data: TemplateFormData) => {
+      setIsLoading(true);
+      try {
+        const updateData = {
+          name: data.name,
+          rules: data.rules,
+        };
 
-      const response = await fetch(`/api/promotion-templates/${template.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
-      });
+        const response = await fetch(`/api/promotion-templates/${template.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updateData),
+        });
 
-      if (!response.ok) {
-        const errorData: ApiError = await response.json().catch(() => ({ message: "Failed to update template" } as any));
-        if (response.status === 404) {
-          toast.error("Template not found. It may have been deleted.");
-          setIsEditModalOpen(false);
-          return;
+        if (!response.ok) {
+          const errorData: ApiError = await response
+            .json()
+            .catch(() => ({ message: "Failed to update template" }) as any);
+          if (response.status === 404) {
+            toast.error("Template not found. It may have been deleted.");
+            setIsEditModalOpen(false);
+            return;
+          }
+          if (response.status === 400 && errorData.details) {
+            const err = new Error(errorData.message || "Validation failed");
+            (err as any).details = errorData.details;
+            (err as any).status = 400;
+            throw err;
+          }
+          throw new Error(errorData.message || "Failed to update template");
         }
-        if (response.status === 400 && errorData.details) {
-          const err = new Error(errorData.message || "Validation failed");
-          (err as any).details = errorData.details;
-          (err as any).status = 400;
-          throw err;
-        }
-        throw new Error(errorData.message || "Failed to update template");
+
+        const updatedTemplate: PromotionTemplateDetailDto = await response.json();
+        setTemplate(updatedTemplate);
+        toast.success("Template updated successfully");
+        setIsEditModalOpen(false);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to update template";
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
       }
-
-      const updatedTemplate: PromotionTemplateDetailDto = await response.json();
-      setTemplate(updatedTemplate);
-      toast.success("Template updated successfully");
-      setIsEditModalOpen(false);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update template";
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [template.id]);
+    },
+    [template.id]
+  );
 
   const handleDeactivateConfirm = useCallback(async () => {
     setIsLoading(true);
@@ -87,7 +87,9 @@ export function TemplateDetailView(props: TemplateDetailViewProps) {
       });
 
       if (!response.ok) {
-        const errorData: ApiError = await response.json().catch(() => ({ message: "Failed to deactivate template" } as any));
+        const errorData: ApiError = await response
+          .json()
+          .catch(() => ({ message: "Failed to deactivate template" }) as any);
         if (response.status === 404) {
           toast.error("Template not found. It may have been deleted.");
           setIsDeactivateModalOpen(false);
@@ -96,7 +98,7 @@ export function TemplateDetailView(props: TemplateDetailViewProps) {
         throw new Error(errorData.message || "Failed to deactivate template");
       }
 
-      setTemplate(prev => ({
+      setTemplate((prev) => ({
         ...prev,
         is_active: false,
         deactivated_at: new Date().toISOString(),
@@ -197,5 +199,3 @@ function focusFirstInDialog() {
     // swallow
   }
 }
-
-

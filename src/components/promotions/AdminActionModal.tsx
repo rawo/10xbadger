@@ -27,13 +27,7 @@ export interface AdminActionModalProps {
   onConfirm: (action: "approve" | "reject", reason?: string) => Promise<void>;
 }
 
-export function AdminActionModal({
-  isOpen,
-  onClose,
-  promotion,
-  action,
-  onConfirm,
-}: AdminActionModalProps) {
+export function AdminActionModal({ isOpen, onClose, promotion, action, onConfirm }: AdminActionModalProps) {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +77,7 @@ export function AdminActionModal({
           <DialogDescription className="space-y-2">
             <p>{description}</p>
             <div className="mt-4 p-3 bg-muted rounded-md">
-              <p className="text-sm font-medium text-foreground">
-                {promotion.template.name}
-              </p>
+              <p className="text-sm font-medium text-foreground">{promotion.template.name}</p>
               <p className="text-sm text-muted-foreground">
                 {promotion.badge_count} badge{promotion.badge_count !== 1 ? "s" : ""} assigned
               </p>
@@ -121,11 +113,7 @@ export function AdminActionModal({
           <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            variant={isApprove ? "default" : "destructive"}
-          >
+          <Button onClick={handleSubmit} disabled={isSubmitting} variant={isApprove ? "default" : "destructive"}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isApprove ? "Approve" : "Reject"}
           </Button>
@@ -134,4 +122,3 @@ export function AdminActionModal({
     </Dialog>
   );
 }
-

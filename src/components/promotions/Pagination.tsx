@@ -44,13 +44,7 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
 
       {/* Navigation Buttons */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrevious}
-          disabled={offset === 0}
-          className="gap-1"
-        >
+        <Button variant="outline" size="sm" onClick={handlePrevious} disabled={offset === 0} className="gap-1">
           <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
@@ -60,13 +54,7 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
           <span className="font-medium text-foreground">{totalPages}</span>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNext}
-          disabled={!has_more}
-          className="gap-1"
-        >
+        <Button variant="outline" size="sm" onClick={handleNext} disabled={!has_more} className="gap-1">
           Next
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -74,4 +62,3 @@ export function Pagination({ pagination, onPageChange }: PaginationProps) {
     </div>
   );
 }
-

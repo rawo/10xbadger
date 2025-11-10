@@ -15,7 +15,7 @@ const uuidSchema = z.string().uuid();
 const { id } = Astro.params;
 const validation = uuidSchema.safeParse(id);
 if (!validation.success) {
-  return Astro.redirect('/404?reason=invalid-id');
+  return Astro.redirect("/404?reason=invalid-id");
 }
 
 // Fetch Template Data
@@ -34,7 +34,7 @@ try {
 
   if (!response.ok) {
     if (response.status === 404) {
-      return Astro.redirect('/404?reason=template-not-found');
+      return Astro.redirect("/404?reason=template-not-found");
     }
     const errorData: ApiError = await response.json();
     error = errorData.message || "Failed to load template";
@@ -47,19 +47,12 @@ try {
 }
 
 if (error || !template) {
-  return Astro.redirect('/500?reason=fetch-error');
+  return Astro.redirect("/500?reason=fetch-error");
 }
 ---
 
 <Layout title={`${template.name} | Promotion Templates | Badger`}>
   <main class="min-h-screen bg-background">
-    <TemplateDetailView
-      client:load
-      initialTemplate={template}
-      userId={userId}
-      isAdmin={isAdmin}
-    />
+    <TemplateDetailView client:load initialTemplate={template} userId={userId} isAdmin={isAdmin} />
   </main>
 </Layout>
-
-

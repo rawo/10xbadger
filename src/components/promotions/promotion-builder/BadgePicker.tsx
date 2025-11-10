@@ -31,12 +31,12 @@ export function BadgePicker({ userId, existingBadgeIds, onAddBadges, isAdding }:
           throw new Error(err.message || "Failed to load badges");
         }
         const data = await res.json();
-        
+
         // Filter out badges that are already in the promotion
         const availableBadges = (data.data || []).filter(
           (badge: BadgeApplicationListItemDto) => !existingBadgeIds.includes(badge.id)
         );
-        
+
         setAvailable(availableBadges);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to load badges";
@@ -53,13 +53,13 @@ export function BadgePicker({ userId, existingBadgeIds, onAddBadges, isAdding }:
   // =========================================================================
   const filteredBadges = React.useMemo(() => {
     if (!searchQuery.trim()) return available;
-    
+
     const query = searchQuery.toLowerCase();
     return available.filter((badge) => {
       const title = badge.catalog_badge.title.toLowerCase();
       const category = badge.catalog_badge.category.toLowerCase();
       const level = badge.catalog_badge.level.toLowerCase();
-      
+
       return title.includes(query) || category.includes(query) || level.includes(query);
     });
   }, [available, searchQuery]);
@@ -114,7 +114,10 @@ export function BadgePicker({ userId, existingBadgeIds, onAddBadges, isAdding }:
           </div>
           <ul className="space-y-2 max-h-60 overflow-y-auto">
             {filteredBadges.map((b) => (
-              <li key={b.id} className="flex items-center gap-3 p-2 rounded-md border hover:bg-muted/50 transition-colors">
+              <li
+                key={b.id}
+                className="flex items-center gap-3 p-2 rounded-md border hover:bg-muted/50 transition-colors"
+              >
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(b.id)}
@@ -127,9 +130,7 @@ export function BadgePicker({ userId, existingBadgeIds, onAddBadges, isAdding }:
                     {b.catalog_badge.category} • {b.catalog_badge.level}
                   </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {b.date_of_fulfillment || b.date_of_application}
-                </div>
+                <div className="text-xs text-muted-foreground">{b.date_of_fulfillment || b.date_of_application}</div>
               </li>
             ))}
           </ul>
@@ -155,6 +156,3 @@ export function BadgePicker({ userId, existingBadgeIds, onAddBadges, isAdding }:
     </div>
   );
 }
-
-
-

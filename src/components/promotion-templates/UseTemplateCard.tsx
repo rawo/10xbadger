@@ -27,8 +27,12 @@ export function UseTemplateCard({
           <h3 className="text-sm font-medium text-foreground">This template includes:</h3>
           <ul className="space-y-1 text-sm text-muted-foreground">
             <li>• {formatPath(templatePath)}</li>
-            <li>• Promotion from {fromLevel} to {toLevel}</li>
-            <li>• {rulesCount} badge {rulesCount === 1 ? "requirement" : "requirements"} to fulfill</li>
+            <li>
+              • Promotion from {fromLevel} to {toLevel}
+            </li>
+            <li>
+              • {rulesCount} badge {rulesCount === 1 ? "requirement" : "requirements"} to fulfill
+            </li>
           </ul>
         </div>
 
@@ -38,9 +42,7 @@ export function UseTemplateCard({
             className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3 text-destructive"
           >
             <AlertTriangle className="h-4 w-4" />
-            <p className="text-sm">
-              This template has been deactivated and cannot be used for new promotions.
-            </p>
+            <p className="text-sm">This template has been deactivated and cannot be used for new promotions.</p>
           </div>
         )}
 
@@ -49,7 +51,13 @@ export function UseTemplateCard({
         </p>
       </CardContent>
       <CardFooter>
-        <Button onClick={onUseTemplate} disabled={!isActive || Boolean(isLoading)} className="w-full" size="lg" aria-busy={Boolean(isLoading)}>
+        <Button
+          onClick={onUseTemplate}
+          disabled={!isActive || Boolean(isLoading)}
+          className="w-full"
+          size="lg"
+          aria-busy={Boolean(isLoading)}
+        >
           {isLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Rocket className="h-4 w-4 mr-2" />}
           Use This Template
         </Button>
@@ -57,5 +65,3 @@ export function UseTemplateCard({
     </Card>
   );
 }
-
-

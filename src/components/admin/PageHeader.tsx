@@ -35,9 +35,7 @@ export function PageHeader(props: AdminPageHeaderProps) {
       {/* Page Title */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-        <p className="text-muted-foreground mt-2">
-          Review and process badge applications submitted by team members
-        </p>
+        <p className="text-muted-foreground mt-2">Review and process badge applications submitted by team members</p>
       </div>
 
       {/* Review Metrics Cards */}
@@ -78,10 +76,10 @@ export function PageHeader(props: AdminPageHeaderProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Accepted (All Time)</p>
-              <p className="text-3xl font-bold mt-2">{metrics.totalReviewedCount > 0 ? Math.floor(metrics.totalReviewedCount * 0.7) : 0}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Click to view all accepted
+              <p className="text-3xl font-bold mt-2">
+                {metrics.totalReviewedCount > 0 ? Math.floor(metrics.totalReviewedCount * 0.7) : 0}
               </p>
+              <p className="text-xs text-muted-foreground mt-2">Click to view all accepted</p>
             </div>
             <div className="rounded-full p-3 bg-green-500">
               <CheckCircle className="h-6 w-6 text-white" />
@@ -97,10 +95,10 @@ export function PageHeader(props: AdminPageHeaderProps) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Rejected (All Time)</p>
-              <p className="text-3xl font-bold mt-2">{metrics.totalReviewedCount > 0 ? Math.ceil(metrics.totalReviewedCount * 0.3) : 0}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Click to view all rejected
+              <p className="text-3xl font-bold mt-2">
+                {metrics.totalReviewedCount > 0 ? Math.ceil(metrics.totalReviewedCount * 0.3) : 0}
               </p>
+              <p className="text-xs text-muted-foreground mt-2">Click to view all rejected</p>
             </div>
             <div className="rounded-full p-3 bg-red-500">
               <XCircle className="h-6 w-6 text-white" />
@@ -111,4 +109,3 @@ export function PageHeader(props: AdminPageHeaderProps) {
     </div>
   );
 }
-

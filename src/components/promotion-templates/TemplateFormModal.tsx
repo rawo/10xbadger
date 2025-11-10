@@ -453,7 +453,16 @@ export function TemplateFormModal({ isOpen, mode, template, onClose, onSubmit }:
               Cancel
             </Button>
             <Button type="submit" disabled={!isFormValid || isSubmitting} aria-busy={isSubmitting}>
-              {isSubmitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</> : mode === "create" ? "Create Template" : "Save Changes"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : mode === "create" ? (
+                "Create Template"
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -466,7 +475,7 @@ export function TemplateFormModal({ isOpen, mode, template, onClose, onSubmit }:
  * Map API validation details to the modal's ValidationErrors shape.
  * Exposed for unit testing.
  */
-export function mapApiValidationDetails(details: Array<{ field: string; message: string }>) {
+export function mapApiValidationDetails(details: { field: string; message: string }[]) {
   const serverErrors: ValidationErrors = {};
   details.forEach((d) => {
     const fieldKey = d.field as keyof ValidationErrors;

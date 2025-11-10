@@ -47,4 +47,3 @@ export function EmptyState({ hasFilters, onClearFilters, onCreatePromotion }: Em
     </div>
   );
 }
-

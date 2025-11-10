@@ -42,7 +42,9 @@ export function PromotionCreateView({ templateId }: Props) {
   }, [templateId]);
 
   if (!templateId) {
-    return <div className="container mx-auto px-4 py-8">No template selected. Please go back and choose a template.</div>;
+    return (
+      <div className="container mx-auto px-4 py-8">No template selected. Please go back and choose a template.</div>
+    );
   }
 
   return (
@@ -55,5 +57,3 @@ export function PromotionCreateView({ templateId }: Props) {
     </div>
   );
 }
-
-

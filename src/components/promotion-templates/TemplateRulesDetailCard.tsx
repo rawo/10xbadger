@@ -17,5 +17,3 @@ export function TemplateRulesDetailCard({ rules }: TemplateRulesDetailCardProps)
     </Card>
   );
 }
-
-

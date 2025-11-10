@@ -66,27 +66,33 @@ export function AdminReviewView(props: AdminReviewViewProps) {
     window.location.href = `/applications/${id}`;
   }, []);
 
-  const handleAccept = useCallback((id: string) => {
-    const application = applications.find((app) => app.id === id);
-    if (!application) return;
+  const handleAccept = useCallback(
+    (id: string) => {
+      const application = applications.find((app) => app.id === id);
+      if (!application) return;
 
-    setReviewModalState({
-      isOpen: true,
-      mode: "accept",
-      application,
-    });
-  }, [applications]);
+      setReviewModalState({
+        isOpen: true,
+        mode: "accept",
+        application,
+      });
+    },
+    [applications]
+  );
 
-  const handleReject = useCallback((id: string) => {
-    const application = applications.find((app) => app.id === id);
-    if (!application) return;
+  const handleReject = useCallback(
+    (id: string) => {
+      const application = applications.find((app) => app.id === id);
+      if (!application) return;
 
-    setReviewModalState({
-      isOpen: true,
-      mode: "reject",
-      application,
-    });
-  }, [applications]);
+      setReviewModalState({
+        isOpen: true,
+        mode: "reject",
+        application,
+      });
+    },
+    [applications]
+  );
 
   const handleModalConfirm = useCallback(
     async (applicationId: string, decisionNote?: string) => {
@@ -114,19 +120,18 @@ export function AdminReviewView(props: AdminReviewViewProps) {
     });
   }, []);
 
-  const handleMetricClick = useCallback((status: string) => {
-    updateFilters({ status: status as any, offset: 0 });
-  }, [updateFilters]);
+  const handleMetricClick = useCallback(
+    (status: string) => {
+      updateFilters({ status: status as any, offset: 0 });
+    },
+    [updateFilters]
+  );
 
   // =========================================================================
   // Calculate Active Filters
   // =========================================================================
 
-  const hasActiveFilters = !!(
-    filters.status !== "submitted" ||
-    filters.applicant_id ||
-    filters.catalog_badge_id
-  );
+  const hasActiveFilters = !!(filters.status !== "submitted" || filters.applicant_id || filters.catalog_badge_id);
 
   // =========================================================================
   // Render
@@ -135,11 +140,7 @@ export function AdminReviewView(props: AdminReviewViewProps) {
   return (
     <div className="space-y-6">
       {/* Page Header with Metrics */}
-      <PageHeader
-        title="Badge Application Review Queue"
-        metrics={metrics}
-        onMetricClick={handleMetricClick}
-      />
+      <PageHeader title="Badge Application Review Queue" metrics={metrics} onMetricClick={handleMetricClick} />
 
       {/* Error Display */}
       {error && (
@@ -188,4 +189,3 @@ export function AdminReviewView(props: AdminReviewViewProps) {
     </div>
   );
 }
-

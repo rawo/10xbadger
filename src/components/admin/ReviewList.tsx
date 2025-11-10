@@ -35,9 +35,7 @@ export function ReviewList(props: ReviewListProps) {
   return (
     <div className="rounded-lg border border-border bg-card">
       <div className="p-4">
-        <p className="text-sm text-muted-foreground">
-          ReviewList component - {applications.length} applications
-        </p>
+        <p className="text-sm text-muted-foreground">ReviewList component - {applications.length} applications</p>
         <p className="text-xs text-muted-foreground mt-2">
           TODO: Implement ReviewRow components with accept/reject actions
         </p>
@@ -45,4 +43,3 @@ export function ReviewList(props: ReviewListProps) {
     </div>
   );
 }
-

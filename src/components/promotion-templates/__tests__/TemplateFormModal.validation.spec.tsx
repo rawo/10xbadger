@@ -20,5 +20,3 @@ describe("mapApiValidationDetails", () => {
     expect(result["unknown_field"]).toBe("Some error");
   });
 });
-
-

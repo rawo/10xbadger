@@ -1,12 +1,12 @@
 ---
 /**
  * Promotion Builder / Detail Page (SSR)
- * 
+ *
  * Server-side rendered page that validates promotion ID, fetches initial promotion data,
  * checks authorization, and hydrates the PromotionBuilderView React component.
- * 
+ *
  * Route: /promotions/:id
- * 
+ *
  * Features:
  * - UUID validation for promotion ID
  * - Server-side data fetching with auth
@@ -126,7 +126,7 @@ try {
         }
       );
     }
-    
+
     if (response.status === 403) {
       // Forbidden - user not authorized
       return new Response(
@@ -193,13 +193,6 @@ const pageTitle = `${promotion.template.name} | Promotion | Badger`;
 
 <Layout title={pageTitle}>
   <main class="min-h-screen bg-background">
-    <PromotionBuilderView
-      client:load
-      initialPromotion={promotion}
-      userId={userId}
-      isAdmin={isAdmin}
-    />
+    <PromotionBuilderView client:load initialPromotion={promotion} userId={userId} isAdmin={isAdmin} />
   </main>
 </Layout>
-
-

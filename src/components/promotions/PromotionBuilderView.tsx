@@ -5,7 +5,7 @@
  * Manages state for promotion data, validation results, modal states, loading states,
  * and coordinates all child components. Handles API calls for adding/removing badges
  * and submitting promotion.
- * 
+ *
  * Features:
  * - Real-time validation against template requirements
  * - Add/remove badge applications
@@ -177,7 +177,9 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
         });
 
         if (!res.ok) {
-          const err: ApiError = await res.json().catch(() => ({ error: "unknown", message: "Failed to remove badges" }));
+          const err: ApiError = await res
+            .json()
+            .catch(() => ({ error: "unknown", message: "Failed to remove badges" }));
           throw new Error(err.message || "Failed to remove badges");
         }
 
@@ -220,7 +222,9 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
           }
         }
 
-        const err: ApiError = await res.json().catch(() => ({ error: "unknown", message: "Failed to submit promotion" }));
+        const err: ApiError = await res
+          .json()
+          .catch(() => ({ error: "unknown", message: "Failed to submit promotion" }));
         throw new Error(err.message || "Failed to submit promotion");
       }
 
@@ -250,7 +254,9 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
       const res = await fetch(`/api/promotions/${promotion.id}`, { method: "DELETE" });
 
       if (!res.ok) {
-        const err: ApiError = await res.json().catch(() => ({ error: "unknown", message: "Failed to delete promotion" }));
+        const err: ApiError = await res
+          .json()
+          .catch(() => ({ error: "unknown", message: "Failed to delete promotion" }));
         throw new Error(err.message || "Failed to delete promotion");
       }
 
@@ -392,10 +398,7 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
         <aside className="lg:col-span-1">
           <div className="rounded-lg border border-border bg-card p-6 sticky top-6 space-y-4">
             <h3 className="text-lg font-semibold mb-3">Eligibility Preview</h3>
-            <EligibilityPreview
-              validationResult={validationResult}
-              isLoading={isValidating}
-            />
+            <EligibilityPreview validationResult={validationResult} isLoading={isValidating} />
 
             {/* Validation Summary */}
             <div>
@@ -426,11 +429,7 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
             {/* Action Buttons */}
             {isDraft && (
               <div className="space-y-2">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !isValid}
-                  className="w-full"
-                >
+                <Button onClick={handleSubmit} disabled={isSubmitting || !isValid} className="w-full">
                   {isSubmitting ? "Submitting…" : "Submit Promotion"}
                 </Button>
                 {canEdit && (
@@ -458,9 +457,7 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
           <div className="bg-card border rounded-lg p-6 max-w-md w-full mx-4">
             <h2 className="text-xl font-semibold mb-4">Badge Already Reserved</h2>
             <p className="text-muted-foreground mb-4">{conflictModal.error.message}</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              Badge ID: {conflictModal.error.badge_application_id}
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">Badge ID: {conflictModal.error.badge_application_id}</p>
             <div className="flex gap-3 justify-end">
               <Button variant="outline" onClick={handleConflictClose}>
                 Cancel
@@ -499,5 +496,3 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
     </div>
   );
 }
-
-

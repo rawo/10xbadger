@@ -14,11 +14,17 @@ export function TemplateDetailHeader({
   return (
     <div className="space-y-4">
       <nav className="flex items-center gap-2 text-sm text-muted-foreground" aria-label="Breadcrumb">
-        <a href="/" className="hover:text-foreground transition-colors">Home</a>
+        <a href="/" className="hover:text-foreground transition-colors">
+          Home
+        </a>
         <span>/</span>
-        <a href="/promotion-templates" className="hover:text-foreground transition-colors">Promotion Templates</a>
+        <a href="/promotion-templates" className="hover:text-foreground transition-colors">
+          Promotion Templates
+        </a>
         <span>/</span>
-        <span className="text-foreground" aria-current="page">{templateName}</span>
+        <span className="text-foreground" aria-current="page">
+          {templateName}
+        </span>
       </nav>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -45,5 +51,3 @@ export function TemplateDetailHeader({
     </div>
   );
 }
-
-
