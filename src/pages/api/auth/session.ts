@@ -31,4 +31,3 @@ export async function GET(_context: APIContext): Promise<Response> {
     }
   );
 }
-

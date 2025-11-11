@@ -48,9 +48,7 @@ describe("ReviewModal", () => {
       );
 
       expect(screen.getByText("Accept Application")).toBeInTheDocument();
-      expect(
-        screen.getByText(/This application will be marked as accepted/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/This application will be marked as accepted/)).toBeInTheDocument();
     });
 
     it("should render application summary", () => {
@@ -125,9 +123,7 @@ describe("ReviewModal", () => {
       );
 
       expect(screen.getByText("Reject Application")).toBeInTheDocument();
-      expect(
-        screen.getByText(/This application will be rejected/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/This application will be rejected/)).toBeInTheDocument();
     });
 
     it("should show decision note field as recommended", () => {
@@ -307,4 +303,3 @@ describe("ReviewModal", () => {
     });
   });
 });
-

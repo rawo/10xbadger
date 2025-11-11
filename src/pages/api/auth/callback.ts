@@ -29,4 +29,3 @@ export async function GET(context: APIContext): Promise<Response> {
   // For now, redirect to login with error
   return context.redirect("/login?error=auth_failed");
 }
-

@@ -23,4 +23,3 @@ export async function GET(context: APIContext): Promise<Response> {
   // For now, redirect back to login with an error
   return context.redirect(`/login?error=auth_failed&redirect=${encodeURIComponent(redirectUrl)}`);
 }
-

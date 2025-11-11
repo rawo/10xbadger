@@ -5,12 +5,12 @@ import { LoginView } from "@/components/auth/LoginView";
 /**
  * Login Page
  *
- * Entry point for authentication. Displays Google Sign-In button and handles
+ * Entry point for authentication. Displays email/password login form and handles
  * error/success messages from query parameters.
  *
  * Query Parameters:
- * - error: Error code to display (e.g., invalid_domain, auth_failed, session_expired)
- * - message: Success message to display (e.g., logged_out)
+ * - error: Error code to display (e.g., invalid_credentials, email_not_confirmed, session_expired)
+ * - message: Success message to display (e.g., logged_out, email_verified, password_reset_success)
  * - redirect: URL to redirect to after successful authentication
  */
 
@@ -33,4 +33,3 @@ if (session) {
 <Layout title="Sign In - 10xbadger">
   <LoginView client:load error={error} message={message} redirectUrl={redirectUrl} />
 </Layout>
-

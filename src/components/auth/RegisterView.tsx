@@ -3,34 +3,61 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AuthErrorAlert, AuthSuccessMessage } from "./AuthErrorAlert";
+import { AuthErrorAlert } from "./AuthErrorAlert";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-interface LoginViewProps {
+interface RegisterViewProps {
   error?: string;
-  message?: string;
-  redirectUrl?: string;
 }
 
-export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
+export function RegisterView({ error }: RegisterViewProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
+  // Calculate password strength (0-4)
+  const calculatePasswordStrength = (pwd: string): number => {
+    let strength = 0;
+    if (pwd.length >= 8) strength++;
+    if (pwd.length >= 12) strength++;
+    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) strength++;
+    if (/\d/.test(pwd)) strength++;
+    if (/[^a-zA-Z0-9]/.test(pwd)) strength++;
+    return Math.min(strength, 4);
+  };
+
+  const handlePasswordChange = (pwd: string) => {
+    setPassword(pwd);
+    setPasswordStrength(calculatePasswordStrength(pwd));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
 
     // Client-side validation
-    if (!email || !password) {
-      setValidationError("Please enter both email and password");
+    if (!email || !password || !confirmPassword) {
+      setValidationError("Please fill in all fields");
       return;
     }
 
     if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
       setValidationError("Please enter a valid email address");
+      return;
+    }
+
+    if (password.length < 8) {
+      setValidationError("Password must be at least 8 characters long");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setValidationError("Passwords do not match");
       return;
     }
 
@@ -40,6 +67,22 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
     // For now, this is just UI - backend integration comes later
     const form = e.target as HTMLFormElement;
     form.submit();
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength === 0) return "bg-gray-200";
+    if (passwordStrength === 1) return "bg-red-500";
+    if (passwordStrength === 2) return "bg-orange-500";
+    if (passwordStrength === 3) return "bg-yellow-500";
+    return "bg-green-500";
+  };
+
+  const getPasswordStrengthText = () => {
+    if (passwordStrength === 0) return "";
+    if (passwordStrength === 1) return "Weak";
+    if (passwordStrength === 2) return "Fair";
+    if (passwordStrength === 3) return "Good";
+    return "Strong";
   };
 
   return (
@@ -67,18 +110,15 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
           <p className="text-muted-foreground text-sm">Badge and Promotion Management</p>
         </div>
 
-        {/* Login Card */}
+        {/* Registration Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>Sign in to your account to continue</CardDescription>
+            <CardTitle>Create Account</CardTitle>
+            <CardDescription>Enter your details to get started</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Error Message from URL params */}
             {error && <AuthErrorAlert error={error} />}
-
-            {/* Success Message from URL params */}
-            {message && <AuthSuccessMessage message={message} />}
 
             {/* Validation Error */}
             {validationError && (
@@ -91,11 +131,8 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
               </div>
             )}
 
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} method="POST" action="/api/auth/login" className="space-y-4">
-              {/* Hidden redirect field */}
-              <input type="hidden" name="redirect" value={redirectUrl || "/"} />
-
+            {/* Registration Form */}
+            <form onSubmit={handleSubmit} method="POST" action="/api/auth/register" className="space-y-4">
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -115,27 +152,19 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
 
               {/* Password Field */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <a
-                    href="/forgot-password"
-                    className="text-xs text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder="At least 8 characters"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
                     disabled={isLoading}
                     required
-                    autoComplete="current-password"
-                    aria-describedby={validationError ? "form-error" : undefined}
+                    autoComplete="new-password"
+                    aria-describedby={validationError ? "form-error" : "password-strength"}
                     className="pr-10"
                   />
                   <button
@@ -148,6 +177,54 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
+
+                {/* Password Strength Indicator */}
+                {password && (
+                  <div id="password-strength" className="space-y-1">
+                    <div className="flex gap-1 h-1">
+                      {[1, 2, 3, 4].map((level) => (
+                        <div
+                          key={level}
+                          className={`h-full flex-1 rounded-full transition-colors ${
+                            level <= passwordStrength ? getPasswordStrengthColor() : "bg-gray-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    {passwordStrength > 0 && (
+                      <p className="text-xs text-muted-foreground">{getPasswordStrengthText()} password</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password Field */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Re-enter your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                    autoComplete="new-password"
+                    aria-describedby={validationError ? "form-error" : undefined}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-r-md"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* Submit Button */}
@@ -155,22 +232,22 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 size-4 animate-spin" />
-                    Signing in...
+                    Creating account...
                   </>
                 ) : (
-                  "Sign In"
+                  "Create Account"
                 )}
               </Button>
             </form>
 
-            {/* Registration Link */}
+            {/* Sign In Link */}
             <div className="text-center text-sm">
-              <span className="text-muted-foreground">Don&apos;t have an account? </span>
+              <span className="text-muted-foreground">Already have an account? </span>
               <a
-                href="/register"
+                href="/login"
                 className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
               >
-                Register
+                Sign in
               </a>
             </div>
           </CardContent>
@@ -178,7 +255,7 @@ export function LoginView({ error, message, redirectUrl }: LoginViewProps) {
 
         {/* Footer */}
         <p className="text-muted-foreground text-center text-xs">
-          By signing in, you agree to our Terms of Service and Privacy Policy.
+          By creating an account, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>
     </div>

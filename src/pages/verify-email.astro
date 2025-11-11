@@ -1,0 +1,20 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { VerifyEmailView } from "@/components/auth/VerifyEmailView";
+
+/**
+ * Verify Email Page
+ *
+ * Displayed after registration to instruct users to check their email
+ * for a verification link. Includes option to resend verification email.
+ *
+ * Query Parameters:
+ * - email: User's email address (optional, for display purposes)
+ */
+
+const email = Astro.url.searchParams.get("email") || undefined;
+---
+
+<Layout title="Verify Email - 10xbadger">
+  <VerifyEmailView client:load email={email} />
+</Layout>

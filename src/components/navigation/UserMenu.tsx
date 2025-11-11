@@ -42,11 +42,7 @@ export function UserMenu({ user }: UserMenuProps) {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-            aria-hidden="true"
-          />
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
 
           {/* Menu Content */}
           <div
@@ -121,4 +117,3 @@ export function UserMenu({ user }: UserMenuProps) {
     </div>
   );
 }
-

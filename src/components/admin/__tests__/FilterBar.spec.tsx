@@ -20,12 +20,7 @@ describe("FilterBar", () => {
 
   it("should render status tabs", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
     expect(screen.getByText("All")).toBeInTheDocument();
@@ -36,12 +31,7 @@ describe("FilterBar", () => {
 
   it("should render sort controls", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
     expect(screen.getByRole("combobox")).toBeInTheDocument();
@@ -50,12 +40,7 @@ describe("FilterBar", () => {
 
   it("should render result count", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={15}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={15} hasActiveFilters={false} />
     );
 
     expect(screen.getByText("15")).toBeInTheDocument();
@@ -64,12 +49,7 @@ describe("FilterBar", () => {
 
   it("should call onFilterChange when status tab is clicked", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
     const acceptedTab = screen.getByText("Accepted");
@@ -83,12 +63,7 @@ describe("FilterBar", () => {
 
   it("should call onFilterChange when sort is changed", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
     const sortSelect = screen.getByRole("combobox");
@@ -102,12 +77,7 @@ describe("FilterBar", () => {
 
   it("should toggle sort order when order button is clicked", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
     const orderButton = screen.getByRole("button", { name: /sort/i });
@@ -121,12 +91,7 @@ describe("FilterBar", () => {
 
   it("should show clear filters button when filters are active", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={true}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={true} />
     );
 
     expect(screen.getByText("Clear filters")).toBeInTheDocument();
@@ -134,12 +99,7 @@ describe("FilterBar", () => {
 
   it("should not show clear filters button when no active filters", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={false}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
     expect(screen.queryByText("Clear filters")).not.toBeInTheDocument();
@@ -147,12 +107,7 @@ describe("FilterBar", () => {
 
   it("should call onFilterChange with reset values when clear filters is clicked", () => {
     render(
-      <FilterBar
-        filters={mockFilters}
-        onFilterChange={mockOnFilterChange}
-        resultCount={10}
-        hasActiveFilters={true}
-      />
+      <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={true} />
     );
 
     const clearButton = screen.getByText("Clear filters");
@@ -212,4 +167,3 @@ describe("FilterBar", () => {
     });
   });
 });
-

@@ -192,7 +192,8 @@ describe("useAdminReview", () => {
 
   describe("Accept Application", () => {
     it("should call accept API and refetch data", async () => {
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ ...mockApplication, status: "accepted" }),
@@ -260,7 +261,8 @@ describe("useAdminReview", () => {
 
   describe("Reject Application", () => {
     it("should call reject API and refetch data", async () => {
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: async () => ({ ...mockApplication, status: "rejected" }),
@@ -343,4 +345,3 @@ describe("useAdminReview", () => {
     });
   });
 });
-

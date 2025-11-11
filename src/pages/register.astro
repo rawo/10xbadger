@@ -1,0 +1,30 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { RegisterView } from "@/components/auth/RegisterView";
+
+/**
+ * Registration Page
+ *
+ * User registration form for creating new accounts with email/password authentication.
+ *
+ * Query Parameters:
+ * - error: Error code to display (e.g., email_already_exists, weak_password, passwords_dont_match)
+ */
+
+const error = Astro.url.searchParams.get("error") || undefined;
+
+// TODO: Check if user is already authenticated and redirect to dashboard
+// This will be implemented when authentication backend is ready
+/*
+const supabase = Astro.locals.supabase;
+const { data: { session } } = await supabase.auth.getSession();
+
+if (session) {
+  return Astro.redirect("/");
+}
+*/
+---
+
+<Layout title="Create Account - 10xbadger">
+  <RegisterView client:load error={error} />
+</Layout>

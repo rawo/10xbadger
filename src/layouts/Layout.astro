@@ -16,9 +16,7 @@ interface Props {
 const { title = "10x Astro Starter", user = null } = Astro.props;
 
 // Check if current page is login, logout, or unauthorized
-const isAuthPage = ["/login", "/logout", "/unauthorized"].some((path) =>
-  Astro.url.pathname.startsWith(path)
-);
+const isAuthPage = ["/login", "/logout", "/unauthorized"].some((path) => Astro.url.pathname.startsWith(path));
 ---
 
 <!doctype html>

@@ -1,37 +1,45 @@
-import { AlertCircle, XCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 interface AuthErrorAlertProps {
   error: string;
 }
 
 const errorMessages: Record<string, { title: string; message: string }> = {
-  invalid_domain: {
-    title: "Access Denied",
-    message: "Your email domain is not authorized to access this application. Please contact your administrator.",
+  invalid_credentials: {
+    title: "Invalid Credentials",
+    message: "Invalid email or password. Please try again.",
   },
-  auth_failed: {
-    title: "Authentication Failed",
-    message: "Authentication failed. Please try again or contact support if the problem persists.",
+  email_already_exists: {
+    title: "Email Already Registered",
+    message: "An account with this email already exists. Please sign in.",
+  },
+  weak_password: {
+    title: "Weak Password",
+    message: "Password must be at least 8 characters long.",
+  },
+  passwords_dont_match: {
+    title: "Passwords Don't Match",
+    message: "Passwords do not match. Please try again.",
+  },
+  invalid_token: {
+    title: "Invalid Reset Link",
+    message: "This reset link is invalid or has expired. Please request a new one.",
+  },
+  email_not_confirmed: {
+    title: "Email Not Verified",
+    message: "Please verify your email address before signing in. Check your inbox.",
   },
   session_expired: {
     title: "Session Expired",
     message: "Your session has expired. Please sign in again to continue.",
   },
   user_not_found: {
-    title: "Account Setup Incomplete",
-    message: "User account not found. Please contact support.",
+    title: "Account Not Found",
+    message: "No account found with this email address.",
   },
   server_error: {
     title: "Server Error",
     message: "An unexpected error occurred. Please try again later.",
-  },
-  invalid_code: {
-    title: "Invalid Authorization",
-    message: "The authorization code is invalid or has expired. Please try signing in again.",
-  },
-  invalid_redirect: {
-    title: "Invalid Redirect",
-    message: "The redirect URL is invalid. Redirecting to home page.",
   },
 };
 
@@ -67,6 +75,22 @@ const successMessages: Record<string, { title: string; message: string }> = {
     title: "Signed Out",
     message: "You have been successfully signed out.",
   },
+  email_verified: {
+    title: "Email Verified",
+    message: "Email verified successfully. You can now sign in.",
+  },
+  password_reset_success: {
+    title: "Password Reset",
+    message: "Password reset successfully. You can now sign in with your new password.",
+  },
+  password_reset_sent: {
+    title: "Check Your Email",
+    message: "Check your email for a password reset link.",
+  },
+  registration_success: {
+    title: "Account Created",
+    message: "Account created successfully. Please check your email to verify your account.",
+  },
 };
 
 export function AuthSuccessMessage({ message }: AuthSuccessMessageProps) {
@@ -95,4 +119,3 @@ export function AuthSuccessMessage({ message }: AuthSuccessMessageProps) {
     </div>
   );
 }
-
