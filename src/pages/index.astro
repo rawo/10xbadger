@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { DashboardView } from "@/components/dashboard/DashboardView";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { DashboardViewModel, PaginatedResponse, BadgeApplicationListItemDto, PromotionListItemDto } from "@/types";
 
 /**
@@ -8,34 +9,12 @@ import type { DashboardViewModel, PaginatedResponse, BadgeApplicationListItemDto
  *
  * Server-side rendered page that fetches initial data for the dashboard.
  * Displays user's badge applications, promotions, and quick statistics.
- *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
+ * Requires authentication.
  */
 
-// =========================================================================
-// DEVELOPMENT MODE: Authentication Disabled
-// =========================================================================
-// TODO: Re-enable authentication before production deployment
-// For now, we use a default user ID for development
-
-const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
-
-// =========================================================================
-// PRODUCTION CODE (Currently Disabled)
-// =========================================================================
-// Uncomment the code below when authentication is ready:
-/*
-const supabase = Astro.locals.supabase;
-
-// Check authentication
-const { data: { user }, error: authError } = await supabase.auth.getUser();
-if (authError || !user) {
-  return Astro.redirect('/login');
-}
-
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
 const userId = user.id;
-*/
 
 // =========================================================================
 // Data Fetching: Badge Applications and Promotions
@@ -133,7 +112,7 @@ const dashboardData: DashboardViewModel = {
 };
 ---
 
-<Layout title="Dashboard - Badger">
+<Layout title="Dashboard - 10xbadger" user={user}>
   <main class="min-h-screen bg-background">
     <div class="container mx-auto px-4 py-8">
       <h1 class="text-3xl font-bold text-foreground mb-8">Dashboard</h1>

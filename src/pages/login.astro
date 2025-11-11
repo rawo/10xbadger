@@ -18,16 +18,15 @@ const error = Astro.url.searchParams.get("error") || undefined;
 const message = Astro.url.searchParams.get("message") || undefined;
 const redirectUrl = Astro.url.searchParams.get("redirect") || "/";
 
-// TODO: Check if user is already authenticated and redirect to dashboard
-// This will be implemented when authentication backend is ready
-/*
+// Check if user is already authenticated and redirect to intended destination
 const supabase = Astro.locals.supabase;
-const { data: { session } } = await supabase.auth.getSession();
+const {
+  data: { user },
+} = await supabase.auth.getUser();
 
-if (session) {
+if (user) {
   return Astro.redirect(redirectUrl);
 }
-*/
 ---
 
 <Layout title="Sign In - 10xbadger">

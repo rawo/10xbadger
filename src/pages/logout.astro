@@ -1,32 +1,17 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-
 /**
  * Logout Page
  *
  * Server-side endpoint that clears the user's session and redirects to the login page.
- * This is a simple redirect page that will be replaced with actual logout logic
- * when authentication backend is implemented.
  */
 
-// TODO: Implement actual logout logic when authentication backend is ready
-/*
 const supabase = Astro.locals.supabase;
 
 // Sign out from Supabase
 await supabase.auth.signOut();
 
 // Redirect to login with message
-return Astro.redirect('/login?message=logged_out');
-*/
-
-// For now, just redirect to login with logout message
 return Astro.redirect("/login?message=logged_out");
 ---
 
 <!-- This page should never be rendered as it always redirects -->
-<Layout title="Signing Out - 10xbadger">
-  <div class="flex min-h-screen items-center justify-center">
-    <p class="text-muted-foreground">Signing you out...</p>
-  </div>
-</Layout>

@@ -24,3 +24,38 @@ export async function logError(
     console.error("Failed to write to error_logs:", e);
   }
 }
+
+/**
+ * Authentication logging stubs
+ * TODO: Implement proper logging infrastructure (database/external service)
+ */
+
+export function logAuthFailure(
+  userId: string | null,
+  message: string,
+  metadata?: Record<string, unknown>
+): void {
+  // Stub implementation - logs to console for now
+  // eslint-disable-next-line no-console
+  console.error("[AUTH_FAILURE]", {
+    userId,
+    message,
+    metadata,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function logAuthSuccess(
+  userId: string,
+  method: string,
+  metadata?: Record<string, unknown>
+): void {
+  // Stub implementation - logs to console for now
+  // eslint-disable-next-line no-console
+  console.log("[AUTH_SUCCESS]", {
+    userId,
+    method,
+    metadata,
+    timestamp: new Date().toISOString(),
+  });
+}

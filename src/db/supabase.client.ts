@@ -1,17 +1,15 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 import type { Database } from "./database.types";
 
 const supabaseUrl = import.meta.env.SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.SUPABASE_KEY;
-const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// DEVELOPMENT MODE: Use service role key to bypass RLS
-// TODO: Switch to anon key and implement proper authentication before production
-// Service role key bypasses Row Level Security, which is necessary for development
-// since authentication is not yet implemented.
-const supabaseKey = supabaseServiceRoleKey || supabaseAnonKey;
-
-export const supabaseClient = createClient<Database>(supabaseUrl, supabaseKey);
+/**
+ * Browser-side Supabase client
+ * This client automatically handles session management via cookies in the browser.
+ * Used for client-side React components.
+ */
+export const supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
 
 export type SupabaseClient = typeof supabaseClient;

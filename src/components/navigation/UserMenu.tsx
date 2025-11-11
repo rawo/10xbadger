@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 interface UserMenuProps {
   user: {
-    display_name: string;
+    display_name: string | null;
     email: string;
     is_admin: boolean;
   };
@@ -13,13 +13,21 @@ interface UserMenuProps {
 export function UserMenu({ user }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Get initials from display name
-  const initials = user.display_name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
+  // Get initials from display name (with fallback to email)
+  const getInitials = () => {
+    const name = user.display_name || user.email;
+    if (!name || name.trim().length === 0) {
+      return "??";
+    }
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const initials = getInitials();
 
   return (
     <div className="relative">
@@ -52,7 +60,7 @@ export function UserMenu({ user }: UserMenuProps) {
           >
             {/* User Info Section */}
             <div className="border-border border-b px-4 py-3">
-              <p className="text-foreground truncate font-medium text-sm">{user.display_name}</p>
+              <p className="text-foreground truncate font-medium text-sm">{user.display_name || user.email}</p>
               <p className="text-muted-foreground truncate text-xs">{user.email}</p>
             </div>
 
