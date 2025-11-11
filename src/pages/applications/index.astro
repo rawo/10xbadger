@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { ApplicationsListView } from "@/components/badge-applications/ApplicationsListView";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { PaginatedResponse, BadgeApplicationListItemDto, ApiError } from "@/types";
 
 /**
@@ -9,47 +10,15 @@ import type { PaginatedResponse, BadgeApplicationListItemDto, ApiError } from "@
  * Server-side rendered page that displays a filterable, paginated list of
  * badge applications. Standard users see only their own applications; admins
  * can view all applications.
- *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
  */
 
-// =========================================================================
-// DEVELOPMENT MODE: Authentication Disabled
-// =========================================================================
-// TODO: Re-enable authentication before production deployment
-// For now, we use a default user ID for development
-
-const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
-const isAdmin = false; // Default to non-admin for development
-
-// =========================================================================
-// PRODUCTION CODE (Currently Disabled)
-// =========================================================================
-// Uncomment the code below when authentication is ready:
-/*
-const supabase = Astro.locals.supabase;
-
-// Check authentication
-const { data: { user }, error: authError } = await supabase.auth.getUser();
-if (authError || !user) {
-  return Astro.redirect('/login');
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
 }
-
-// Get user info
-const { data: userData, error: userError } = await supabase
-  .from("users")
-  .select("is_admin")
-  .eq("id", user.id)
-  .single();
-
-if (userError || !userData) {
-  return Astro.redirect('/login');
-}
-
 const userId = user.id;
-const isAdmin = userData.is_admin;
-*/
+const isAdmin = user.is_admin;
 
 // =========================================================================
 // Parse Query Parameters with Defaults
@@ -123,7 +92,7 @@ if (!initialData) {
 }
 ---
 
-<Layout title="My Applications - Badger">
+<Layout title="My Applications - Badger" user={user}>
   <main class="min-h-screen bg-background">
     <div class="container mx-auto px-4 py-8">
       {

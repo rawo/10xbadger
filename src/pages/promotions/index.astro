@@ -18,42 +18,16 @@
 
 import Layout from "@/layouts/Layout.astro";
 import { PromotionsListView } from "@/components/promotions/PromotionsListView";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { PaginatedResponse, PromotionListItemDto, ApiError } from "@/types";
 
-// =========================================================================
-// DEVELOPMENT MODE: Authentication Disabled
-// =========================================================================
-// TODO: Re-enable authentication before production deployment
-const userId = "550e8400-e29b-41d4-a716-446655440100"; // Test user (John Doe)
-const isAdmin = false; // Default to non-admin for development
-
-// =========================================================================
-// PRODUCTION CODE (Currently Disabled)
-// =========================================================================
-// Uncomment when authentication is ready:
-/*
-const {
-  data: { user },
-  error: authError,
-} = await Astro.locals.supabase.auth.getUser();
-
-if (authError || !user) {
-  return Astro.redirect('/login');
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
 }
-
-const { data: userData, error: userError } = await Astro.locals.supabase
-  .from("users")
-  .select("is_admin")
-  .eq("id", user.id)
-  .single();
-
-if (userError || !userData) {
-  return Astro.redirect('/login');
-}
-
 const userId = user.id;
-const isAdmin = userData.is_admin || false;
-*/
+const isAdmin = user.is_admin;
 
 // =========================================================================
 // Build API Request URL with Query Parameters
@@ -145,7 +119,7 @@ const initialFilters = {
 };
 ---
 
-<Layout title="Promotions | Badger">
+<Layout title="Promotions | Badger" user={user}>
   <main class="min-h-screen bg-background">
     <PromotionsListView
       client:load

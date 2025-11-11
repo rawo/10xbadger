@@ -13,19 +13,8 @@ import type { UserDto } from "@/types";
  */
 export async function getAuthenticatedUser(Astro: AstroGlobal): Promise<UserDto | null> {
   const supabase = Astro.locals.supabase;
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return null;
-  }
-
-  const { data: userData } = await supabase.from("users").select("*").eq("id", user.id).single();
-
-  return userData || null;
+  const userData = await supabase.auth.getUser();
+  return userData.data?.user || null;
 }
 
 /**
@@ -33,14 +22,13 @@ export async function getAuthenticatedUser(Astro: AstroGlobal): Promise<UserDto 
  * Redirects to login if user is not authenticated
  * Returns the authenticated user
  */
-export async function requireAuth(Astro: AstroGlobal): Promise<UserDto> {
+export async function requireAuth(Astro: AstroGlobal): Promise<UserDto | Response> {
   const user = await getAuthenticatedUser(Astro);
 
-  if (!user) {
+  if (user == null) {
     const redirectUrl = encodeURIComponent(Astro.url.pathname + Astro.url.search);
-    return Astro.redirect(`/login?redirect=${redirectUrl}`) as never;
+    return Astro.redirect(`/login?redirect=${redirectUrl}`);
   }
-
   return user;
 }
 
@@ -49,12 +37,14 @@ export async function requireAuth(Astro: AstroGlobal): Promise<UserDto> {
  * Redirects to unauthorized page if user is not an admin
  * Returns the authenticated admin user
  */
-export async function requireAdmin(Astro: AstroGlobal): Promise<UserDto> {
+export async function requireAdmin(Astro: AstroGlobal): Promise<UserDto | Response> {
   const user = await requireAuth(Astro);
 
-  if (!user.is_admin) {
-    return Astro.redirect("/unauthorized") as never;
+  if (user instanceof Response) {
+    return user;
   }
-
+  if (!user.is_admin) {
+    return Astro.redirect("/unauthorized");
+  }
   return user;
 }

@@ -10,21 +10,20 @@
  * - Administrators: All standard user capabilities + CRUD operations
  */
 
+console.log("[CATALOG] Page executing - checking auth...");
+
 import Layout from "@/layouts/Layout.astro";
 import { CatalogBadgesView } from "@/components/catalog-badges/CatalogBadgesView";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { PaginatedResponse, CatalogBadgeListItemDto, ApiError } from "@/types";
 
-// TODO: Enable authentication when ready
-// const supabase = Astro.locals.supabase;
-// const { data: { session } } = await supabase.auth.getSession();
-// if (!session) {
-//   return Astro.redirect('/login');
-// }
-// const userId = session.user.id;
-
-// Development defaults (TODO: Replace with actual authentication)
-const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
-const isAdmin = false; // Default to non-admin for development
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
+}
+const userId = user.id;
+const isAdmin = user.is_admin;
 
 // Parse query parameters with defaults
 const url = new URL(Astro.request.url);
@@ -83,7 +82,7 @@ if (!initialData) {
 }
 ---
 
-<Layout title="Badge Catalog">
+<Layout title="Badge Catalog" user={user}>
   {
     error ? (
       <div class="container mx-auto px-4 py-8">

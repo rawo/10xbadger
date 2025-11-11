@@ -12,19 +12,16 @@
 
 import Layout from "@/layouts/Layout.astro";
 import { CatalogBadgeDetail } from "@/components/catalog-badges/CatalogBadgeDetail";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { CatalogBadgeDto, ApiError } from "@/types";
 
-// TODO: Enable authentication when ready
-// const supabase = Astro.locals.supabase;
-// const { data: { session } } = await supabase.auth.getSession();
-// if (!session) {
-//   return Astro.redirect('/login');
-// }
-// const userId = session.user.id;
-
-// Development defaults (TODO: Replace with actual authentication)
-const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
-const isAdmin = false; // Default to non-admin for development
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
+}
+const userId = user.id;
+const isAdmin = user.is_admin;
 
 // Extract badge ID from URL params
 const { id } = Astro.params;
@@ -64,7 +61,7 @@ try {
 const pageTitle = badge ? `${badge.title} - Badge Catalog` : "Badge Details";
 ---
 
-<Layout title={pageTitle}>
+<Layout title={pageTitle} user={user}>
   {
     error ? (
       <div class="container mx-auto px-4 py-8">

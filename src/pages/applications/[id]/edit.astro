@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { ApplicationEditor } from "@/components/badge-applications/ApplicationEditor";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { BadgeApplicationDetailDto, CatalogBadgeDetailDto, ApiError } from "@/types";
 import { UUID_REGEX } from "@/lib/validation/uuid";
 
@@ -9,33 +10,14 @@ import { UUID_REGEX } from "@/lib/validation/uuid";
  *
  * Server-side rendered page for editing an existing draft badge application.
  * Validates ownership and ensures application is in draft status.
- *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
  */
 
-// =========================================================================
-// DEVELOPMENT MODE: Authentication Disabled
-// =========================================================================
-// TODO: Re-enable authentication before production deployment
-
-const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
-
-// =========================================================================
-// PRODUCTION CODE (Currently Disabled)
-// =========================================================================
-// Uncomment the code below when authentication is ready:
-/*
-const supabase = Astro.locals.supabase;
-
-// Check authentication
-const { data: { user }, error: authError } = await supabase.auth.getUser();
-if (authError || !user) {
-  return Astro.redirect('/login?return=' + encodeURIComponent(Astro.url.pathname));
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
 }
-
 const userId = user.id;
-*/
 
 // =========================================================================
 // Validate Path Parameters
@@ -173,7 +155,7 @@ if (error || !badgeApplication || !catalogBadge) {
 const showInactiveWarning = catalogBadge.status === "inactive";
 ---
 
-<Layout title="Edit Badge Application - Badger">
+<Layout title="Edit Badge Application - Badger" user={user}>
   <main class="min-h-screen bg-background">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
       {

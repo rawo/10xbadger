@@ -1,6 +1,7 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { AdminReviewView } from "@/components/admin/AdminReviewView";
+import { requireAdmin } from "@/lib/auth/server-auth";
 import type { PaginatedResponse, BadgeApplicationListItemDto, AdminReviewMetrics, ApiError } from "@/types";
 
 /**
@@ -9,52 +10,15 @@ import type { PaginatedResponse, BadgeApplicationListItemDto, AdminReviewMetrics
  * Server-side rendered page that displays the admin review queue for badge applications.
  * This page is admin-only and shows submitted applications awaiting review as well as
  * previously reviewed applications (accepted/rejected).
- *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
  */
 
-// =========================================================================
-// DEVELOPMENT MODE: Authentication Disabled
-// =========================================================================
-// TODO: Re-enable authentication before production deployment
-// For now, we use a default admin user ID for development
-
-const adminUserId = "550e8400-e29b-41d4-a716-446655440100"; // Test admin user (admin@goodcompany.com)
-const isAdmin = true; // Default to admin for development
-
-// =========================================================================
-// PRODUCTION CODE (Currently Disabled)
-// =========================================================================
-// Uncomment the code below when authentication is ready:
-/*
-const supabase = Astro.locals.supabase;
-
-// Check authentication
-const { data: { user }, error: authError } = await supabase.auth.getUser();
-if (authError || !user) {
-  return Astro.redirect('/login?return=/admin/review');
+// Require admin authentication - redirects to unauthorized if not admin
+const user = await requireAdmin(Astro);
+if (user instanceof Response) {
+  return user;
 }
-
-// Get user info and check admin status
-const { data: userData, error: userError } = await supabase
-  .from("users")
-  .select("is_admin")
-  .eq("id", user.id)
-  .single();
-
-if (userError || !userData) {
-  return Astro.redirect('/login');
-}
-
-if (!userData.is_admin) {
-  // Non-admin users cannot access this page
-  return new Response('Forbidden - Admin access required', { status: 403 });
-}
-
 const adminUserId = user.id;
-const isAdmin = userData.is_admin;
-*/
+const isAdmin = true;
 
 // =========================================================================
 // Parse Query Parameters with Defaults
@@ -190,7 +154,7 @@ try {
 }
 ---
 
-<Layout title="Admin Review Queue - Badger">
+<Layout title="Admin Review Queue - Badger" user={user}>
   <main class="min-h-screen bg-background">
     <div class="container mx-auto px-4 py-8">
       {

@@ -1,14 +1,17 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import { TemplateDetailView } from "@/components/promotion-templates/TemplateDetailView";
+import { requireAuth } from "@/lib/auth/server-auth";
 import type { PromotionTemplateDetailDto, ApiError } from "@/types";
 import { z } from "zod";
 
-// =========================================================================
-// DEVELOPMENT MODE: Authentication Disabled
-// =========================================================================
-const userId = "550e8400-e29b-41d4-a716-446655440100";
-const isAdmin = false;
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
+}
+const userId = user.id;
+const isAdmin = user.is_admin;
 
 // Validate Route Parameter
 const uuidSchema = z.string().uuid();
@@ -51,7 +54,7 @@ if (error || !template) {
 }
 ---
 
-<Layout title={`${template.name} | Promotion Templates | Badger`}>
+<Layout title={`${template.name} | Promotion Templates | Badger`} user={user}>
   <main class="min-h-screen bg-background">
     <TemplateDetailView client:load initialTemplate={template} userId={userId} isAdmin={isAdmin} />
   </main>
