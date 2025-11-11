@@ -55,27 +55,40 @@ export async function POST(context: APIContext): Promise<Response> {
     // Note: We allow login even if email is not verified (as per requirements)
     // The UI will show a verification banner if needed
 
-    // Fetch or create user record
-    let { data: userData, error: userError } = await supabase
+    // Fetch user record using SERVICE ROLE to bypass RLS
+    // This is necessary because RLS policies may block reading the user record
+    // during login flow (circular dependency with is_admin() function)
+    const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      console.error("[Login] SUPABASE_SERVICE_ROLE_KEY not configured");
+      await supabase.auth.signOut();
+      return context.redirect("/login?error=server_error");
+    }
+
+    // Create admin client with service role key (bypasses RLS)
+    const { createClient } = await import("@supabase/supabase-js");
+    const adminClient = createClient(import.meta.env.SUPABASE_URL, serviceRoleKey);
+
+    // Fetch user record (bypassing RLS)
+    let { data: userData, error: userError } = await adminClient
       .from("users")
       .select("*")
       .eq("id", data.user.id)
       .single();
 
-    if (userError || !userData) {
+    // Debug logging to see what's happening
+    console.log("[Login Debug] User fetch result:", {
+      userId: data.user.id,
+      hasUserData: !!userData,
+      errorCode: userError?.code,
+      errorMessage: userError?.message,
+    });
+
+    // Check if user record doesn't exist (PGRST116 is "not found" error)
+    const userNotFound = userError?.code === 'PGRST116' || (!userData && !userError);
+
+    if (userNotFound) {
       // User not in database yet, create record
-      // We need to use service role key to bypass RLS for user creation
-      const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (!serviceRoleKey) {
-        console.error("[Login] SUPABASE_SERVICE_ROLE_KEY not configured");
-        await supabase.auth.signOut();
-        return context.redirect("/login?error=server_error");
-      }
-
-      // Create admin client with service role key (bypasses RLS)
-      const { createClient } = await import("@supabase/supabase-js");
-      const adminClient = createClient(import.meta.env.SUPABASE_URL, serviceRoleKey);
-
       // Check if this should be an admin user
       const isAdmin = data.user.email === "admin@badger.com";
 
@@ -103,15 +116,14 @@ export async function POST(context: APIContext): Promise<Response> {
       }
 
       userData = newUserData;
-    } else {
-      // Update last_seen_at for existing user
-      // Use service role key to ensure update succeeds
-      const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
-      if (serviceRoleKey) {
-        const { createClient } = await import("@supabase/supabase-js");
-        const adminClient = createClient(import.meta.env.SUPABASE_URL, serviceRoleKey);
-        await adminClient.from("users").update({ last_seen_at: new Date().toISOString() }).eq("id", data.user.id);
-      }
+    } else if (userData) {
+      // User exists - update last_seen_at
+      await adminClient.from("users").update({ last_seen_at: new Date().toISOString() }).eq("id", data.user.id);
+    } else if (userError) {
+      // Unexpected error fetching user
+      logAuthFailure(data.user.id, "Failed to fetch user record", { error: userError });
+      await supabase.auth.signOut();
+      return context.redirect("/login?error=server_error");
     }
 
     logAuthSuccess(data.user.id, "email_password", { action: "login" });

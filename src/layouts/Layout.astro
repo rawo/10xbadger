@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import { Toaster } from "@/components/ui/toaster";
 import { UserMenu } from "@/components/navigation/UserMenu";
+import { getAuthenticatedUser } from "@/lib/auth/server-auth";
 
 interface Props {
   title?: string;
@@ -13,10 +14,27 @@ interface Props {
   } | null;
 }
 
-const { title = "10x Astro Starter", user = null } = Astro.props;
+const { title = "10xbadger", user: propsUser = null } = Astro.props;
+
+// Server-side user state verification
+// If user is not provided via props, check session on the server
+let user = propsUser;
+if (!user) {
+  try {
+    user = await getAuthenticatedUser(Astro);
+  } catch (error) {
+    // Silent fail - user is not authenticated
+    console.debug("[Layout] User not authenticated:", error);
+  }
+}
 
 // Check if current page is login, logout, or unauthorized
-const isAuthPage = ["/login", "/logout", "/unauthorized"].some((path) => Astro.url.pathname.startsWith(path));
+const isAuthPage = ["/login", "/logout", "/unauthorized", "/register", "/forgot-password", "/reset-password", "/verify-email"].some((path) => 
+  Astro.url.pathname.startsWith(path)
+);
+
+// Track authentication state for client-side components
+const isAuthenticated = user !== null;
 ---
 
 <!doctype html>
@@ -27,8 +45,15 @@ const isAuthPage = ["/login", "/logout", "/unauthorized"].some((path) => Astro.u
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+    
+    <!-- Pass authentication state to client-side -->
+    <script is:inline define:vars={{ isAuthenticated }}>
+      window.__AUTH_STATE__ = {
+        isAuthenticated: isAuthenticated,
+      };
+    </script>
   </head>
-  <body>
+  <body data-authenticated={isAuthenticated}>
     <!-- Navigation Header (hidden on auth pages) -->
     {
       !isAuthPage && (
