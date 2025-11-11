@@ -1,15 +1,18 @@
 # Product Requirements Document (PRD) - Badger (MVP)
 ## 1. Product Overview
-Badger is a web application designed to replace legacy Excel and Confluence-based badge tracking with a single system for cataloging badges, submitting badge applications, and building promotion submissions. The MVP focuses on core flows for engineers and administrators: catalog browsing and search, badge application drafting and submission, administrative review, promotion building and submission, and basic role-based access via Google Workspace SSO.
+Badger is a web application designed to replace legacy Excel and Confluence-based badge tracking with a single system for cataloging badges, submitting badge applications, and building promotion submissions. The MVP focuses on core flows for engineers and administrators: catalog browsing and search, badge application drafting and submission, administrative review, promotion building and submission, and basic role-based access via email/password authentication.
 
 ## 2. User Problem
 A software-house currently maintains badge definitions in Confluence and badge issuance in Excel, which is inconvenient to use and hard to maintain. Engineers lack a central, searchable catalog and a straightforward way to apply badges toward promotions. Administrators lack an organized review workflow and a reliable way to manage the badge catalog and promotion submissions. Badger aims to centralize these processes, reduce manual work, and increase transparency.
 
 ## 3. Functional Requirements
 FR-001 Authentication and Authorization
-- Use Google Workspace SSO (OIDC/SAML) restricted to the company domain (e.g., `@goodcompany.com`). No manual account creation. Admin accounts seeded at deploy for MVP.
+- Use email and password authentication with email verification (Supabase Auth).
+- Support user registration via registration form with email/password.
+- Support password recovery via email reset links.
+- Admin accounts assigned through database updates only (no UI for admin assignment in MVP).
 - Roles: `administrator` and `standard user (engineer)`; administrators also have standard user capabilities.
-- All endpoints must validate the authenticated user's domain claim and role for access control.
+- All endpoints must validate the authenticated user and role for access control.
 
 FR-002 Badge Catalog
 - Catalog badge model: 
@@ -95,13 +98,41 @@ Out of scope for MVP:
 This section lists all user stories required for MVP implementation. Each story includes acceptance criteria.
 
 US-001
-Title: User Authentication via Google Workspace SSO
-Description: As a user, I want to sign in with my company Google account so that access is restricted to employees.
+Title: User Authentication via email and password
+Description: As a user, I want to sign in with my email and password.
 Acceptance Criteria:
-- Login flow supports Google SSO (OIDC/SAML).
-- Only emails from the configured company domain can sign in.
-- Admin accounts are seeded at deploy.
-- Unauthorized domain emails receive a clear error message.
+- Admin accounts are assigned through database updates (as per US-00104).
+- Invalid credentials or unverified email addresses receive a clear error message.
+
+US-00101
+Title: User registration via registration form
+Description: As a user, I want to register with my email and password.
+Acceptance Criteria:
+- Registration flow forbids already registered emails
+- Registration flow requires to provide email and password
+- Password must be at lest 8 characters long
+
+US-00102
+Title: User sign out  via sign out button
+Description: As a user, I want to be able to sign out from my session.
+Acceptance criteria:
+- sign out  redirects user to a login page
+- sign out clears the user session
+
+US-00103
+Title: User password recovery
+Description: As a user, I want to be able to recover my password so that I can login again.
+Acceptance criteria:
+- password recovery requires email to be provided
+- password recovery provides a one time recovery link, where user can set new password
+- new password overrides old password
+- one time link is invalidated once opened 
+ 
+US-00104
+Title: Administrative rights
+Description: As user I want to have admin rights to be assigned to my account
+Acceptance criteria:
+- admin rights can be assigned only through database updates
 
 US-002
 Title: View Badge Catalog (standard user)
@@ -216,7 +247,7 @@ SM-003 Operational Metrics (recommended)
 - Monitor reservation conflict rate and auth failure rate.
 
 ## Appendix: Data Models (concise)
-- User: { id: UUID, email, name, role }
+- User: { id: UUID, email, display_name, is_admin: boolean, created_at, last_seen_at }
 - CatalogBadge: { id: UUID, title, description, category, levels[]{level, description}, pathsAllowed, createdAt, createdBy, deactivatedAt, status }
 - BadgeApplication: { id: UUID, catalogBadgeId, selectedLevel, catalogBadgeVersion, applicantId, dateOfApplication, dateOfFulfillment, reason, createdAt, status }
 - PromotionTemplate: { id, path, level, requirements: [{category, level, count}] }

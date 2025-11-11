@@ -2,29 +2,29 @@
 
 ## Document Overview
 
-This specification describes the authentication system for 10xbadger, implementing Google Workspace SSO (OIDC) using Supabase Auth and Astro. It covers user registration, login, logout flows while maintaining compatibility with existing application behavior defined in the PRD.
+This specification describes the authentication system for 10xbadger, implementing email/password authentication using Supabase Auth and Astro. It covers user registration, login, logout, and password recovery flows while maintaining compatibility with existing application behavior defined in the PRD.
 
-**Version**: 1.1  
-**Date**: 2025-11-10  
-**Status**: Technical Specification  
-**PRD Reference**: FR-001 (Authentication and Authorization), US-001 (User Authentication via Google Workspace SSO), US-014 (Logging)
+**Version**: 2.0
+**Date**: 2025-11-10
+**Status**: Technical Specification
+**PRD Reference**: FR-001 (Authentication and Authorization), US-001, US-00101, US-00102, US-00103, US-00104
 
 ### Key Requirements from PRD
 
-**FR-001 Authentication and Authorization**:
-- Use Google Workspace SSO (OIDC/SAML) restricted to company domain
-- No manual account creation
-- Admin accounts seeded at deploy for MVP
+**FR-001 Authentication and Authorization** (Updated):
+- Use email and password authentication (Supabase Auth)
+- Support user registration with email validation
+- Support password recovery with email reset links
+- Admin accounts assigned through database updates only
 - Roles: `administrator` and `standard user (engineer)`
-- All endpoints must validate authenticated user's domain claim and role
+- All endpoints must validate authenticated user and role
 
-**US-001 Acceptance Criteria**:
-- ✅ Login flow supports Google SSO (OIDC)
-- ✅ Only emails from configured company domain can sign in
-- ✅ Admin accounts seeded at deploy (manual process)
-- ✅ Unauthorized domain emails receive clear error message
-
-**Note**: Password recovery is explicitly OUT OF SCOPE for MVP (OAuth-only authentication)
+**User Stories Covered**:
+- **US-001**: User Authentication via email and password
+- **US-00101**: User registration via registration form
+- **US-00102**: User sign out via sign out button
+- **US-00103**: User password recovery
+- **US-00104**: Administrative rights assignment
 
 ---
 
@@ -32,10 +32,11 @@ This specification describes the authentication system for 10xbadger, implementi
 
 ### 1.1 Authentication Flow Overview
 
-The application implements a hybrid authentication model where:
+The application implements a standard email/password authentication model where:
 - **Unauthenticated users** are redirected to `/login` for all protected routes
 - **Authenticated users** have seamless access to application features
-- **Google Workspace SSO** is the primary authentication method (domain-restricted)
+- **Email/password** is the authentication method with email verification
+- **Password recovery** available via email reset links
 - **Session management** uses Supabase Auth with httpOnly cookies
 
 ### 1.2 Page Structure
@@ -43,32 +44,93 @@ The application implements a hybrid authentication model where:
 #### 1.2.1 New Auth Pages
 
 **Page: Login (`/login`)**
-- **Purpose**: Entry point for authentication; redirect to Google SSO
+- **Purpose**: Entry point for authentication; email/password login form
 - **Access**: Public (unauthenticated only; redirects authenticated users to `/`)
 - **Components**:
   - `LoginPage.astro` - Server-rendered Astro page
-  - `LoginView.tsx` - React component for interactive elements
-  - `GoogleSignInButton.tsx` - SSO trigger button
+  - `LoginView.tsx` - React component for interactive login form
+  - `EmailPasswordForm.tsx` - Email and password input fields
   - `AuthErrorAlert.tsx` - Display authentication errors
+  - `AuthSuccessAlert.tsx` - Display success messages (e.g., "Check your email")
 - **Layout**: Centered card layout with branding, minimal navigation
 - **Content**:
   - Application logo and name
-  - Brief description ("Sign in with your company Google account")
-  - Google Sign-In button (primary CTA)
+  - Email input field
+  - Password input field (with show/hide toggle)
+  - "Sign In" button (primary CTA)
+  - "Forgot password?" link → `/forgot-password`
+  - "Don't have an account? Register" link → `/register`
   - Error message display area
-  - Link to support/help (if needed)
+  - Success message display area
 
-**Page: Auth Callback (`/auth/callback`)**
-- **Purpose**: Handle OAuth callback from Google
-- **Access**: Public (handles redirect after Google authentication)
-- **Implementation**: Server-side Astro endpoint
-- **Flow**:
-  1. Receive OAuth code from Google
-  2. Exchange code for Supabase session
-  3. Validate domain restriction
-  4. Create or update user in database
-  5. Redirect to intended destination or `/`
-- **Error Handling**: Redirect to `/login?error=...` on failure
+**Page: Register (`/register`)**
+- **Purpose**: New user registration with email and password
+- **Access**: Public (unauthenticated only; redirects authenticated users to `/`)
+- **Components**:
+  - `RegisterPage.astro` - Server-rendered Astro page
+  - `RegisterView.tsx` - React component for interactive registration form
+  - `RegistrationForm.tsx` - Form with validation
+  - `PasswordStrengthIndicator.tsx` - Visual password strength meter
+  - `AuthErrorAlert.tsx` - Display registration errors
+- **Layout**: Centered card layout with branding
+- **Content**:
+  - Application logo and name
+  - Email input field (with validation)
+  - Password input field (min 8 characters)
+  - Password confirmation field
+  - Password strength indicator
+  - "Create Account" button (primary CTA)
+  - "Already have an account? Sign in" link → `/login`
+  - Error message display area
+  - Success message: "Check your email to verify your account"
+
+**Page: Verify Email (`/verify-email`)**
+- **Purpose**: Instructions after registration
+- **Access**: Public
+- **Components**:
+  - `VerifyEmailView.tsx` - Instructions and resend link
+- **Content**:
+  - Check email icon/illustration
+  - "Check your email" heading
+  - Instructions to click verification link
+  - "Resend verification email" button
+  - "Back to login" link
+
+**Page: Forgot Password (`/forgot-password`)**
+- **Purpose**: Initiate password recovery process
+- **Access**: Public
+- **Components**:
+  - `ForgotPasswordPage.astro` - Server-rendered Astro page
+  - `ForgotPasswordView.tsx` - React component for form
+  - `EmailForm.tsx` - Email input field
+  - `AuthErrorAlert.tsx` - Display errors
+  - `AuthSuccessAlert.tsx` - Display success messages
+- **Layout**: Centered card layout
+- **Content**:
+  - "Reset your password" heading
+  - Instructions: "Enter your email to receive reset link"
+  - Email input field
+  - "Send Reset Link" button (primary CTA)
+  - "Back to login" link → `/login`
+  - Success message: "Check your email for reset link"
+
+**Page: Reset Password (`/reset-password`)**
+- **Purpose**: Set new password via recovery link
+- **Access**: Public (requires valid recovery token in URL)
+- **Components**:
+  - `ResetPasswordPage.astro` - Server-rendered Astro page
+  - `ResetPasswordView.tsx` - React component for form
+  - `NewPasswordForm.tsx` - New password input fields
+  - `PasswordStrengthIndicator.tsx` - Visual password strength meter
+  - `AuthErrorAlert.tsx` - Display errors
+- **Layout**: Centered card layout
+- **Content**:
+  - "Set new password" heading
+  - New password input field (min 8 characters)
+  - Confirm password input field
+  - Password strength indicator
+  - "Reset Password" button (primary CTA)
+  - Success redirect to `/login` with success message
 
 **Page: Logout Confirmation (`/logout`)**
 - **Purpose**: Confirm logout action and clear session
@@ -80,12 +142,12 @@ The application implements a hybrid authentication model where:
   3. Redirect to `/login?message=logged_out`
 
 **Page: Unauthorized (`/unauthorized`)**
-- **Purpose**: Display friendly message for domain restriction violations
+- **Purpose**: Display friendly message for insufficient permissions
 - **Access**: Public
 - **Content**:
-  - Explanation of domain restriction
+  - Explanation of access restrictions
   - Contact information for access requests
-  - Link to return to login
+  - Link to return to dashboard or login
 
 #### 1.2.2 Modified Existing Pages
 
@@ -145,7 +207,7 @@ interface Props {
 
 **Component: `LoginView` (React)**
 - **File**: `src/components/auth/LoginView.tsx`
-- **Purpose**: Interactive login interface
+- **Purpose**: Interactive login interface with email/password
 - **Props**:
 ```typescript
 interface LoginViewProps {
@@ -154,25 +216,105 @@ interface LoginViewProps {
   redirectUrl?: string;
 }
 ```
-- **State**: None (stateless, triggers server-side OAuth flow)
+- **State**:
+  - `email: string` - User email input
+  - `password: string` - User password input
+  - `isLoading: boolean` - Form submission state
+  - `showPassword: boolean` - Password visibility toggle
+- **Validation**:
+  - Email: Valid email format (RFC 5322)
+  - Password: Not empty, minimum 8 characters
 - **Events**:
-  - `handleGoogleSignIn()` - Initiates OAuth flow via `/auth/google`
+  - `handleSubmit()` - Submit login form via `/api/auth/login`
+  - `handleForgotPassword()` - Navigate to `/forgot-password`
+  - `handleRegister()` - Navigate to `/register`
 
-**Component: `GoogleSignInButton` (React)**
-- **File**: `src/components/auth/GoogleSignInButton.tsx`
-- **Purpose**: Styled Google OAuth button
+**Component: `RegisterView` (React)**
+- **File**: `src/components/auth/RegisterView.tsx`
+- **Purpose**: User registration form
 - **Props**:
 ```typescript
-interface GoogleSignInButtonProps {
-  redirectUrl?: string;
-  disabled?: boolean;
+interface RegisterViewProps {
+  error?: string;
 }
 ```
-- **Implementation**:
-  - Redirects to `/auth/google?redirect=${redirectUrl}`
-  - Uses Google branding guidelines
-  - Accessible with keyboard navigation
-  - Shows loading state during redirect
+- **State**:
+  - `email: string` - User email input
+  - `password: string` - User password input
+  - `confirmPassword: string` - Password confirmation
+  - `isLoading: boolean` - Form submission state
+  - `showPassword: boolean` - Password visibility toggle
+  - `passwordStrength: number` - Password strength score (0-4)
+- **Validation**:
+  - Email: Valid format, not already registered
+  - Password: Minimum 8 characters
+  - Confirm password: Must match password
+  - Real-time validation feedback
+- **Events**:
+  - `handleSubmit()` - Submit registration via `/api/auth/register`
+  - `handlePasswordChange()` - Update password strength indicator
+
+**Component: `ForgotPasswordView` (React)**
+- **File**: `src/components/auth/ForgotPasswordView.tsx`
+- **Purpose**: Password recovery initiation
+- **Props**:
+```typescript
+interface ForgotPasswordViewProps {
+  error?: string;
+  success?: boolean;
+}
+```
+- **State**:
+  - `email: string` - User email input
+  - `isLoading: boolean` - Form submission state
+  - `sent: boolean` - Email sent confirmation
+- **Validation**:
+  - Email: Valid format, required
+- **Events**:
+  - `handleSubmit()` - Send reset email via `/api/auth/forgot-password`
+
+**Component: `ResetPasswordView` (React)**
+- **File**: `src/components/auth/ResetPasswordView.tsx`
+- **Purpose**: Set new password via recovery link
+- **Props**:
+```typescript
+interface ResetPasswordViewProps {
+  token: string; // Recovery token from URL
+  error?: string;
+}
+```
+- **State**:
+  - `password: string` - New password input
+  - `confirmPassword: string` - Password confirmation
+  - `isLoading: boolean` - Form submission state
+  - `showPassword: boolean` - Password visibility toggle
+  - `passwordStrength: number` - Password strength score
+- **Validation**:
+  - Password: Minimum 8 characters
+  - Confirm password: Must match password
+- **Events**:
+  - `handleSubmit()` - Reset password via `/api/auth/reset-password`
+
+**Component: `PasswordStrengthIndicator` (React)**
+- **File**: `src/components/auth/PasswordStrengthIndicator.tsx`
+- **Purpose**: Visual feedback for password strength
+- **Props**:
+```typescript
+interface PasswordStrengthIndicatorProps {
+  password: string;
+  onStrengthChange?: (strength: number) => void;
+}
+```
+- **Algorithm**:
+  - Score 0-4 based on:
+    - Length (8+ chars)
+    - Uppercase letters
+    - Lowercase letters
+    - Numbers
+    - Special characters
+- **Display**:
+  - Color-coded strength bar (red → yellow → green)
+  - Text labels: "Weak", "Fair", "Good", "Strong"
 
 **Component: `AuthErrorAlert` (React)**
 - **File**: `src/components/auth/AuthErrorAlert.tsx`
@@ -180,14 +322,30 @@ interface GoogleSignInButtonProps {
 - **Props**:
 ```typescript
 interface AuthErrorAlertProps {
-  error: string; // Error code from URL params
+  error: string; // Error code from URL params or API
+  dismissible?: boolean;
 }
 ```
 - **Error Messages**:
-  - `invalid_domain` - "Your email domain is not authorized to access this application."
-  - `auth_failed` - "Authentication failed. Please try again."
+  - `invalid_credentials` - "Invalid email or password."
+  - `email_already_exists` - "An account with this email already exists."
+  - `weak_password` - "Password must be at least 8 characters long."
+  - `passwords_dont_match` - "Passwords do not match."
+  - `invalid_token` - "Reset link is invalid or has expired."
+  - `email_not_confirmed` - "Please verify your email address before signing in."
   - `session_expired` - "Your session has expired. Please sign in again."
-  - `user_not_found` - "User account not found. Please contact support."
+  - `user_not_found` - "No account found with this email."
+
+**Component: `AuthSuccessAlert` (React)**
+- **File**: `src/components/auth/AuthSuccessAlert.tsx`
+- **Purpose**: Display success messages
+- **Props**:
+```typescript
+interface AuthSuccessAlertProps {
+  message: string;
+  dismissible?: boolean;
+}
+```
 
 **Component: `UserMenu` (React)**
 - **File**: `src/components/navigation/UserMenu.tsx`
@@ -213,22 +371,6 @@ interface UserMenuProps {
     - Divider
     - "Sign Out" → `/logout`
 
-**Component: `ProtectedRoute` (Higher-Order Component)**
-- **File**: `src/components/auth/ProtectedRoute.tsx`
-- **Purpose**: Client-side route protection for React components
-- **Props**:
-```typescript
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requireAdmin?: boolean;
-  fallback?: React.ReactNode;
-}
-```
-- **Behavior**:
-  - Checks authentication status via `useUser()` hook
-  - Redirects unauthenticated users to `/login`
-  - Shows fallback or error for insufficient permissions
-
 #### 1.3.2 Modified Existing Components
 
 **All React Views** (Dashboard, Catalog, Applications, etc.)
@@ -249,66 +391,129 @@ export interface DashboardViewProps {
 #### 1.4.1 Client-Side Validation
 
 **Login Form**:
-- No traditional form validation (direct OAuth flow)
-- Check for valid redirect parameter (whitelist URLs)
+- Email: Required, valid email format
+- Password: Required, not empty
 
-**Domain Validation**:
-- Performed server-side after OAuth callback
-- Extract domain from `user.email`
-- Compare against `ALLOWED_EMAIL_DOMAIN` environment variable
-- Reject non-matching domains with clear error message
+**Registration Form**:
+- Email: Required, valid format
+- Password: Required, minimum 8 characters
+- Confirm Password: Required, must match password
+- Real-time validation with error messages
 
-#### 1.4.2 Error Messages
+**Forgot Password Form**:
+- Email: Required, valid format
 
-| Error Code | User Message | Technical Details |
-|------------|--------------|-------------------|
-| `invalid_domain` | "Access Denied: Your email domain (@{domain}) is not authorized. Please contact your administrator." | Email domain doesn't match `ALLOWED_EMAIL_DOMAIN` |
-| `auth_failed` | "Authentication failed. Please try again or contact support if the problem persists." | OAuth exchange failed or Supabase error |
-| `session_expired` | "Your session has expired. Please sign in again to continue." | Supabase session invalid or expired |
-| `user_not_found` | "Account setup incomplete. Please contact support." | User record missing in database |
-| `server_error` | "An unexpected error occurred. Please try again later." | Unhandled server exception |
+**Reset Password Form**:
+- Password: Required, minimum 8 characters
+- Confirm Password: Required, must match password
+- Password strength: Show indicator, require minimum strength
+
+#### 1.4.2 Server-Side Validation
+
+All forms validated on server with Zod schemas:
+- Email format validation
+- Password length validation (min 8 chars)
+- Email uniqueness check for registration
+- Token validity check for password reset
+
+#### 1.4.3 Error Messages
+
+| Error Code | User Message | Context |
+|------------|--------------|---------|
+| `invalid_credentials` | "Invalid email or password. Please try again." | Login |
+| `email_already_exists` | "An account with this email already exists. Please sign in." | Registration |
+| `weak_password` | "Password must be at least 8 characters long." | Registration/Reset |
+| `passwords_dont_match` | "Passwords do not match. Please try again." | Registration/Reset |
+| `invalid_token` | "This reset link is invalid or has expired. Please request a new one." | Password Reset |
+| `email_not_confirmed` | "Please verify your email address before signing in. Check your inbox." | Login |
+| `session_expired` | "Your session has expired. Please sign in again to continue." | Protected Pages |
+| `user_not_found` | "No account found with this email address." | Forgot Password |
+| `server_error` | "An unexpected error occurred. Please try again later." | All Forms |
 
 ### 1.5 User Scenarios
 
-#### 1.5.1 First-Time User Login
+#### 1.5.1 First-Time User Registration
 
 **Flow**:
-1. User navigates to protected route (e.g., `/`) → Redirected to `/login?redirect=/`
-2. User sees login page with Google Sign-In button
-3. User clicks "Sign in with Google"
-4. Browser redirects to Google OAuth consent screen
-5. User authenticates with Google and grants permissions
-6. Google redirects to `/auth/callback?code=...`
-7. Server exchanges code for Supabase session
-8. Server validates email domain
-9. Server creates user record in `users` table (if not exists)
-10. Server sets session cookie and redirects to intended destination
-11. User sees dashboard with full navigation
+1. User navigates to `/login`
+2. User clicks "Don't have an account? Register"
+3. User fills out registration form (email, password, confirm password)
+4. User clicks "Create Account"
+5. Server validates input, checks email uniqueness
+6. Server creates Supabase Auth user (status: unconfirmed)
+7. Server sends verification email via Supabase
+8. User redirected to `/verify-email` with instructions
+9. User checks email and clicks verification link
+10. Verification link redirects to `/login?message=email_verified`
+11. User can now sign in with credentials
 
 **Validation**:
-- Email domain must match `ALLOWED_EMAIL_DOMAIN`
-- Google sub must be unique in `users.google_sub`
-- User record created with `is_admin = false` (default)
+- Email must be valid format
+- Email must not already exist
+- Password must be at least 8 characters
+- Confirm password must match
 
 **Edge Cases**:
-- Domain mismatch → Redirect to `/unauthorized` with explanation
-- Duplicate email → Use existing user record
-- Database error → Redirect to `/login?error=server_error`
+- Duplicate email → Show error: "Email already exists"
+- Weak password → Show error inline before submit
+- Email send failure → Show error: "Failed to send verification email"
 
 #### 1.5.2 Returning User Login
 
 **Flow**:
-1. User navigates to `/` → Redirected to `/login`
-2. User clicks "Sign in with Google"
-3. OAuth flow completes (may skip consent screen)
-4. Server updates `users.last_seen_at`
-5. User redirected to intended destination
+1. User navigates to `/` → Redirected to `/login?redirect=/`
+2. User enters email and password
+3. User clicks "Sign In"
+4. Server validates credentials via Supabase Auth
+5. Server checks email confirmation status
+6. Server fetches user profile from `users` table
+7. Server sets session cookie
+8. Server updates `last_seen_at` timestamp
+9. User redirected to intended destination or `/`
 
-**Session Duration**:
-- Supabase default: 1 hour (refresh token extends)
-- Configurable via Supabase dashboard
+**Validation**:
+- Credentials must match Supabase Auth
+- Email must be confirmed
+- User record must exist in `users` table
 
-#### 1.5.3 Logout
+**Edge Cases**:
+- Invalid credentials → Show error: "Invalid email or password"
+- Email not confirmed → Show error with resend link
+- User not in database → Create user record, then continue
+
+#### 1.5.3 Password Recovery
+
+**Flow (Initiate)**:
+1. User clicks "Forgot password?" on login page
+2. User redirected to `/forgot-password`
+3. User enters email address
+4. User clicks "Send Reset Link"
+5. Server generates recovery token via Supabase
+6. Server sends recovery email with link to `/reset-password?token=xxx`
+7. User sees success message: "Check your email"
+
+**Flow (Complete)**:
+1. User clicks link in email
+2. User redirected to `/reset-password?token=xxx`
+3. Page validates token (not expired, not used)
+4. User enters new password (twice)
+5. User clicks "Reset Password"
+6. Server validates token and updates password
+7. Token is invalidated (one-time use)
+8. User redirected to `/login?message=password_reset_success`
+
+**Validation**:
+- Email must exist in system (don't reveal if it doesn't for security)
+- Token must be valid and not expired (default 1 hour)
+- Token must not have been used already
+- New password must be at least 8 characters
+
+**Edge Cases**:
+- Invalid/expired token → Show error: "Link is invalid or expired"
+- Token already used → Show error: "Link has already been used"
+- Email not found → Still show success (security best practice)
+
+#### 1.5.4 Logout
 
 **Flow**:
 1. User clicks "Sign Out" in UserMenu
@@ -316,9 +521,9 @@ export interface DashboardViewProps {
 3. Server calls `supabase.auth.signOut()`
 4. Server clears cookies
 5. Server redirects to `/login?message=logged_out`
-6. User sees confirmation message
+6. User sees confirmation message: "You have been signed out"
 
-#### 1.5.4 Session Expiration
+#### 1.5.5 Session Expiration
 
 **Flow**:
 1. User session expires (idle timeout or max age)
@@ -389,82 +594,223 @@ if (!userData?.is_admin) {
 
 #### 2.1.1 New Authentication Endpoints
 
-**Endpoint: `GET /auth/google`**
-- **Purpose**: Initiate Google OAuth flow
+**Endpoint: `POST /api/auth/register`**
+- **Purpose**: Register new user with email and password
 - **Access**: Public
 - **Implementation**: Astro API route
-- **File**: `src/pages/api/auth/google.ts`
-- **Parameters**:
-  - `redirect` (query, optional): URL to redirect after successful auth
-- **Flow**:
-  1. Validate and sanitize redirect parameter
-  2. Generate OAuth state token (CSRF protection)
-  3. Store state and redirect in session/cookie
-  4. Call `supabase.auth.signInWithOAuth({ provider: 'google' })`
-  5. Return redirect response to Google OAuth URL
-- **Response**: HTTP 302 redirect to Google
-
-**Endpoint: `GET /auth/callback`**
-- **Purpose**: Handle Google OAuth callback
-- **Access**: Public
-- **Implementation**: Astro API route
-- **File**: `src/pages/api/auth/callback.ts`
-- **Parameters**:
-  - `code` (query, required): OAuth authorization code
-  - `state` (query, required): CSRF protection token
-- **Flow**:
-  1. Validate state token matches session
-  2. Exchange code for Supabase session via `supabase.auth.exchangeCodeForSession()`
-  3. Extract user info from session
-  4. Validate email domain
-  5. Upsert user record in `users` table
-  6. Set session cookie
-  7. Redirect to intended destination or `/`
-- **Validation**:
+- **File**: `src/pages/api/auth/register.ts`
+- **Request Body**:
 ```typescript
-const emailDomain = user.email.split('@')[1];
-const allowedDomain = import.meta.env.ALLOWED_EMAIL_DOMAIN;
-
-if (emailDomain !== allowedDomain) {
-  await supabase.auth.signOut();
-  return Astro.redirect('/unauthorized?domain=' + emailDomain);
+{
+  email: string;      // Valid email address
+  password: string;   // Minimum 8 characters
 }
 ```
-- **User Creation**:
+- **Validation**:
 ```typescript
-const { error } = await supabase
-  .from('users')
-  .upsert({
-    id: user.id,
-    email: user.email,
-    display_name: user.user_metadata.full_name || user.email,
-    google_sub: user.user_metadata.sub,
-    last_seen_at: new Date().toISOString(),
-  }, {
-    onConflict: 'google_sub',
-  });
+const RegisterSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
 ```
-- **Response**: HTTP 302 redirect to app or error page
-- **Error Handling**:
-  - Invalid state → Redirect to `/login?error=invalid_state`
-  - Exchange failed → Redirect to `/login?error=auth_failed`
-  - Domain mismatch → Redirect to `/unauthorized`
-  - Database error → Log and redirect to `/login?error=server_error`
+- **Flow**:
+  1. Validate request body with Zod schema
+  2. Check if email already exists (Supabase will handle this)
+  3. Call `supabase.auth.signUp({ email, password })`
+  4. Supabase sends verification email automatically
+  5. Create placeholder record in `users` table
+  6. Return success response
+- **Response Success (201)**:
+```typescript
+{
+  message: "Registration successful. Please check your email to verify your account.",
+  email: "user@example.com"
+}
+```
+- **Response Errors**:
+  - `400 Bad Request`: Invalid input
+    ```json
+    {
+      "error": "validation_error",
+      "message": "Invalid email format",
+      "details": [{"field": "email", "message": "Invalid email format"}]
+    }
+    ```
+  - `409 Conflict`: Email already exists
+    ```json
+    {
+      "error": "email_already_exists",
+      "message": "An account with this email already exists"
+    }
+    ```
+  - `500 Internal Server Error`: Server error
+
+**Endpoint: `POST /api/auth/login`**
+- **Purpose**: Authenticate user with email and password
+- **Access**: Public
+- **Implementation**: Astro API route
+- **File**: `src/pages/api/auth/login.ts`
+- **Request Body**:
+```typescript
+{
+  email: string;
+  password: string;
+}
+```
+- **Validation**:
+```typescript
+const LoginSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(1, 'Password is required'),
+});
+```
+- **Flow**:
+  1. Validate request body
+  2. Call `supabase.auth.signInWithPassword({ email, password })`
+  3. Check if email is confirmed
+  4. Fetch or create user record in `users` table
+  5. Update `last_seen_at` timestamp
+  6. Return session info
+- **Response Success (200)**:
+```typescript
+{
+  user: {
+    id: "uuid",
+    email: "user@example.com",
+    display_name: "User Name",
+    is_admin: false
+  },
+  message: "Login successful"
+}
+```
+- **Response Errors**:
+  - `400 Bad Request`: Invalid input
+  - `401 Unauthorized`: Invalid credentials
+    ```json
+    {
+      "error": "invalid_credentials",
+      "message": "Invalid email or password"
+    }
+    ```
+  - `403 Forbidden`: Email not confirmed
+    ```json
+    {
+      "error": "email_not_confirmed",
+      "message": "Please verify your email address before signing in"
+    }
+    ```
+
+**Endpoint: `POST /api/auth/forgot-password`**
+- **Purpose**: Initiate password recovery process
+- **Access**: Public
+- **Implementation**: Astro API route
+- **File**: `src/pages/api/auth/forgot-password.ts`
+- **Request Body**:
+```typescript
+{
+  email: string;
+}
+```
+- **Validation**:
+```typescript
+const ForgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
+```
+- **Flow**:
+  1. Validate request body
+  2. Call `supabase.auth.resetPasswordForEmail(email, { redirectTo })`
+  3. Supabase sends recovery email with token
+  4. Always return success (security: don't reveal if email exists)
+- **Response Success (200)**:
+```typescript
+{
+  message: "If an account exists with this email, you will receive a password reset link."
+}
+```
+- **Response Errors**:
+  - `400 Bad Request`: Invalid email format
+  - `429 Too Many Requests`: Rate limit exceeded
+
+**Endpoint: `POST /api/auth/reset-password`**
+- **Purpose**: Set new password with recovery token
+- **Access**: Public (requires valid token)
+- **Implementation**: Astro API route
+- **File**: `src/pages/api/auth/reset-password.ts`
+- **Request Body**:
+```typescript
+{
+  token: string;      // Recovery token from email link
+  password: string;   // New password (min 8 chars)
+}
+```
+- **Validation**:
+```typescript
+const ResetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+```
+- **Flow**:
+  1. Validate request body
+  2. Verify token with `supabase.auth.verifyOtp({ token_hash, type: 'recovery' })`
+  3. Update password with `supabase.auth.updateUser({ password })`
+  4. Token is automatically invalidated by Supabase (one-time use)
+  5. Return success response
+- **Response Success (200)**:
+```typescript
+{
+  message: "Password reset successful. You can now sign in with your new password."
+}
+```
+- **Response Errors**:
+  - `400 Bad Request`: Invalid input or weak password
+  - `401 Unauthorized`: Invalid or expired token
+    ```json
+    {
+      "error": "invalid_token",
+      "message": "Reset link is invalid or has expired"
+    }
+    ```
 
 **Endpoint: `POST /api/auth/logout`**
 - **Purpose**: Terminate user session
 - **Access**: Protected (authenticated users)
 - **Implementation**: Astro API route
 - **File**: `src/pages/api/auth/logout.ts`
+- **Request Body**: None
 - **Flow**:
-  1. Call `supabase.auth.signOut()`
-  2. Clear cookies
-  3. Return success response
-- **Response**:
+  1. Get session from request
+  2. Call `supabase.auth.signOut()`
+  3. Clear cookies
+  4. Return success response
+- **Response Success (200)**:
 ```typescript
 {
   success: true,
   message: "Logged out successfully"
+}
+```
+
+**Endpoint: `POST /api/auth/resend-verification`**
+- **Purpose**: Resend email verification link
+- **Access**: Public
+- **Implementation**: Astro API route
+- **File**: `src/pages/api/auth/resend-verification.ts`
+- **Request Body**:
+```typescript
+{
+  email: string;
+}
+```
+- **Flow**:
+  1. Validate email format
+  2. Call `supabase.auth.resend({ type: 'signup', email })`
+  3. Return success (don't reveal if email exists)
+- **Response Success (200)**:
+```typescript
+{
+  message: "Verification email sent. Please check your inbox."
 }
 ```
 
@@ -473,7 +819,7 @@ const { error } = await supabase
 - **Access**: Public (returns null if unauthenticated)
 - **Implementation**: Astro API route
 - **File**: `src/pages/api/auth/session.ts`
-- **Response**:
+- **Response Success (200)**:
 ```typescript
 {
   user: {
@@ -489,10 +835,11 @@ const { error } = await supabase
 **Endpoint: `GET /api/me`**
 - **Purpose**: Get authenticated user profile
 - **Access**: Protected
-- **Implementation**: Astro API route (new)
+- **Implementation**: Astro API route
 - **File**: `src/pages/api/me.ts`
-- **Response**: `UserDto`
-- **Error**: 401 if unauthenticated
+- **Response Success (200)**: `UserDto`
+- **Response Errors**:
+  - `401 Unauthorized`: Not authenticated
 
 #### 2.1.2 Modified API Endpoints
 
@@ -514,12 +861,12 @@ export async function GET(context: APIContext): Promise<Response> {
 
   // 1. Authenticate
   const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
+
   if (authError || !user) {
     return new Response(
-      JSON.stringify({ 
-        error: 'unauthorized', 
-        message: 'Authentication required' 
+      JSON.stringify({
+        error: 'unauthorized',
+        message: 'Authentication required'
       }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     );
@@ -534,9 +881,9 @@ export async function GET(context: APIContext): Promise<Response> {
 
   if (!userData) {
     return new Response(
-      JSON.stringify({ 
-        error: 'unauthorized', 
-        message: 'User not found' 
+      JSON.stringify({
+        error: 'unauthorized',
+        message: 'User not found'
       }),
       { status: 401, headers: { 'Content-Type': 'application/json' } }
     );
@@ -552,10 +899,10 @@ export async function GET(context: APIContext): Promise<Response> {
 
 ### 2.2 Data Models
 
-#### 2.2.1 Existing User Model (No Changes Required)
+#### 2.2.1 User Model
 
 **Table**: `users`
-- **Schema** (from migration):
+- **Schema** (from existing migration):
 ```sql
 create table users (
   id uuid primary key default gen_random_uuid(),
@@ -563,24 +910,28 @@ create table users (
   display_name text not null,
   is_admin boolean not null default false,
   created_at timestamptz not null default now(),
-  last_seen_at timestamptz,
-  google_sub text not null unique
+  last_seen_at timestamptz
 );
+```
+
+**Note**: The `google_sub` field from the previous Google OAuth implementation should be removed in a new migration:
+
+```sql
+-- Migration: Remove google_sub column
+alter table users drop column if exists google_sub;
 ```
 
 **Fields**:
 - `id` (UUID, PK) - Matches Supabase Auth user ID
-- `email` (text, unique) - User email from Google
-- `display_name` (text) - Full name from Google profile
+- `email` (text, unique) - User email
+- `display_name` (text) - User's display name
 - `is_admin` (boolean) - Admin role flag (default false)
 - `created_at` (timestamptz) - Account creation timestamp
 - `last_seen_at` (timestamptz) - Last login timestamp
-- `google_sub` (text, unique) - Google subject ID (stable identifier)
 
 **Indexes**:
 - Primary key on `id`
 - Unique constraint on `email`
-- Unique constraint on `google_sub`
 
 #### 2.2.2 Session Storage
 
@@ -589,62 +940,68 @@ create table users (
 - Client receives httpOnly cookie with session token
 - No application database changes required
 - Refresh tokens handled by Supabase
+- Email confirmation status tracked by Supabase Auth
 
 ### 2.3 Input Validation
 
-#### 2.3.1 OAuth Callback Validation
+#### 2.3.1 Zod Schemas
 
-**Zod Schema** (`src/lib/validation/auth.validation.ts`):
+**File**: `src/lib/validation/auth.validation.ts`
+
 ```typescript
 import { z } from 'zod';
 
-export const OAuthCallbackSchema = z.object({
-  code: z.string().min(1, 'Authorization code is required'),
-  state: z.string().min(1, 'State parameter is required'),
+// Registration validation
+export const RegisterSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+// Login validation
+export const LoginSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+// Forgot password validation
+export const ForgotPasswordSchema = z.object({
+  email: z.string().email('Invalid email format'),
+});
+
+// Reset password validation
+export const ResetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+// Redirect URL validation
 export const RedirectSchema = z.object({
-  redirect: z.string().url().optional().refine(
+  redirect: z.string().optional().refine(
     (url) => !url || url.startsWith('/'),
     'Redirect must be a relative path'
   ),
 });
-
-export const EmailDomainSchema = z.object({
-  email: z.string().email('Invalid email format'),
-}).refine(
-  (data) => {
-    const domain = data.email.split('@')[1];
-    const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN;
-    return domain === allowedDomain;
-  },
-  {
-    message: 'Email domain not authorized',
-  }
-);
 ```
 
-#### 2.3.2 Session Validation
+#### 2.3.2 Password Strength Validation
 
-**Middleware** (`src/middleware/auth.ts`):
-```typescript
-import { defineMiddleware } from 'astro:middleware';
+**Client-Side Only** (UX feedback):
+- Check length (8+ characters)
+- Check for uppercase, lowercase, numbers, special chars
+- Display strength indicator
+- Don't block submission based on strength
 
-export const validateSession = defineMiddleware(async (context, next) => {
-  const supabase = context.locals.supabase;
-  const { data: { session } } = await supabase.auth.getSession();
+**Server-Side**:
+- Enforce minimum 8 characters (Supabase default)
+- Can configure stronger requirements in Supabase dashboard
 
-  if (session) {
-    // Refresh user's last_seen_at timestamp
-    await supabase
-      .from('users')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', session.user.id);
-  }
+#### 2.3.3 Email Verification
 
-  return next();
-});
-```
+**Supabase Handles**:
+- Sends verification email on signup
+- Tracks confirmation status
+- Requires confirmation before login (configurable)
+- Provides resend functionality
 
 ### 2.4 Exception Handling
 
@@ -663,12 +1020,42 @@ export class AuthError extends Error {
   }
 }
 
-export class DomainNotAllowedError extends AuthError {
-  constructor(domain: string) {
+export class InvalidCredentialsError extends AuthError {
+  constructor() {
     super(
-      `Email domain @${domain} is not authorized`,
-      'domain_not_allowed',
+      'Invalid email or password',
+      'invalid_credentials',
+      401
+    );
+  }
+}
+
+export class EmailAlreadyExistsError extends AuthError {
+  constructor() {
+    super(
+      'An account with this email already exists',
+      'email_already_exists',
+      409
+    );
+  }
+}
+
+export class EmailNotConfirmedError extends AuthError {
+  constructor() {
+    super(
+      'Please verify your email address before signing in',
+      'email_not_confirmed',
       403
+    );
+  }
+}
+
+export class InvalidTokenError extends AuthError {
+  constructor() {
+    super(
+      'Reset link is invalid or has expired',
+      'invalid_token',
+      401
     );
   }
 }
@@ -679,6 +1066,16 @@ export class SessionExpiredError extends AuthError {
       'Your session has expired',
       'session_expired',
       401
+    );
+  }
+}
+
+export class WeakPasswordError extends AuthError {
+  constructor() {
+    super(
+      'Password must be at least 8 characters long',
+      'weak_password',
+      400
     );
   }
 }
@@ -701,13 +1098,11 @@ export function logAuthFailure(
     reason,
     ...metadata,
   });
-
-  // Optionally: Insert into audit_logs table
 }
 
 export function logAuthSuccess(
   userId: string,
-  method: 'google_oauth',
+  method: 'email_password',
   metadata?: Record<string, unknown>
 ): void {
   console.info('[AUTH_SUCCESS]', {
@@ -726,12 +1121,11 @@ export function logAuthSuccess(
 // src/lib/audit-logger.ts
 
 import type { SupabaseClient } from '@/db/supabase.client';
-import { AuditEventType } from '@/types';
 
 export async function logAuthEvent(
   supabase: SupabaseClient,
   userId: string | null,
-  eventType: typeof AuditEventType.AuthFailure | 'auth.success',
+  eventType: 'auth.success' | 'auth.failure' | 'auth.password_reset',
   metadata: Record<string, unknown>
 ): Promise<void> {
   await supabase.from('audit_logs').insert({
@@ -823,44 +1217,53 @@ if (!userData) {
 
 ### 3.1 Supabase Auth Configuration
 
-#### 3.1.1 OAuth Provider Setup
+#### 3.1.1 Email Authentication Setup
 
 **Supabase Dashboard Configuration**:
 1. Navigate to Authentication > Providers
-2. Enable Google provider
-3. Configure OAuth settings:
-   - Client ID: From Google Cloud Console
-   - Client Secret: From Google Cloud Console
-   - Authorized redirect URIs: `https://[project-ref].supabase.co/auth/v1/callback`
-4. Configure email domain restrictions (application-level, not Supabase)
+2. Ensure Email provider is enabled (default)
+3. Configure email settings:
+   - **Enable Email Signup**: Yes
+   - **Confirm Email**: Yes (require email verification)
+   - **Secure Email Change**: Yes
+   - **Double Confirm Email Changes**: Yes
 
-**Google Cloud Console Setup**:
-1. Create OAuth 2.0 Client ID (Web application)
-2. Set Authorized JavaScript origins:
-   - `http://localhost:3000` (development)
-   - `https://yourdomain.com` (production)
-3. Set Authorized redirect URIs:
-   - `https://[project-ref].supabase.co/auth/v1/callback`
-4. Configure OAuth consent screen:
-   - App name: "10xbadger"
-   - Support email
-   - Scopes: email, profile, openid
-   - Authorized domains: Your application domain
+**Email Templates** (Authentication > Email Templates):
+1. **Confirmation Email**:
+   - Subject: "Confirm your email for 10xbadger"
+   - Body: Include {{ .ConfirmationURL }} link
+   - Redirect URL: `https://yourdomain.com/login?message=email_verified`
+
+2. **Magic Link** (Not used in MVP, but available):
+   - Can be used for passwordless login in future
+
+3. **Password Recovery**:
+   - Subject: "Reset your password for 10xbadger"
+   - Body: Include {{ .ConfirmationURL }} link
+   - Redirect URL: `https://yourdomain.com/reset-password`
 
 #### 3.1.2 Session Configuration
 
 **Supabase Project Settings** (Authentication):
-- **Session Duration**: 3600 seconds (1 hour)
+- **JWT Expiry**: 3600 seconds (1 hour)
 - **Refresh Token Rotation**: Enabled
-- **Auto Confirm Users**: Enabled (no email verification needed for OAuth)
-- **Disable Signup**: Disabled (allow OAuth signup)
-- **Enable Manual Signup**: Disabled (OAuth only)
+- **Auto Confirm Users**: Disabled (require email verification)
+- **Disable Signup**: Disabled (allow registration)
+- **Enable Manual Signup**: Enabled
+- **Minimum Password Length**: 8 characters
+- **Strong Password**: Disabled (we handle client-side)
 
-#### 3.1.3 Email Templates (Not Used in MVP)
+#### 3.1.3 Security Settings
 
-**Note**: Password recovery and email verification are not part of MVP scope (OAuth-only). If needed in future:
-- Configure in Supabase Dashboard > Authentication > Email Templates
-- Customize templates for password reset
+**Password Policy**:
+- Minimum length: 8 characters
+- No complexity requirements (configurable in dashboard)
+- Rate limiting on password reset: 60 seconds
+
+**Session Security**:
+- HttpOnly cookies for tokens
+- Secure flag in production
+- SameSite: Lax (CSRF protection)
 
 ### 3.2 Supabase Client Configuration
 
@@ -880,16 +1283,18 @@ export const supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKe
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce', // Use PKCE flow for added security
   },
 });
 
 export type SupabaseClient = typeof supabaseClient;
 ```
 
-**Changes**:
+**Changes from Previous Version**:
 - Remove service role key usage (was for development)
 - Use anon key (respects Row Level Security)
 - Enable session persistence and auto-refresh
+- Use PKCE flow for better security
 
 #### 3.2.2 Server-Side Auth Helper
 
@@ -902,9 +1307,9 @@ export async function getAuthenticatedUser(
   Astro: AstroGlobal
 ): Promise<UserDto | null> {
   const supabase = Astro.locals.supabase;
-  
+
   const { data: { user }, error } = await supabase.auth.getUser();
-  
+
   if (error || !user) {
     return null;
   }
@@ -922,12 +1327,12 @@ export async function requireAuth(
   Astro: AstroGlobal
 ): Promise<UserDto> {
   const user = await getAuthenticatedUser(Astro);
-  
+
   if (!user) {
     const redirectUrl = encodeURIComponent(Astro.url.pathname + Astro.url.search);
     return Astro.redirect(`/login?redirect=${redirectUrl}`) as never;
   }
-  
+
   return user;
 }
 
@@ -935,11 +1340,11 @@ export async function requireAdmin(
   Astro: AstroGlobal
 ): Promise<UserDto> {
   const user = await requireAuth(Astro);
-  
+
   if (!user.is_admin) {
     return Astro.redirect('/unauthorized') as never;
   }
-  
+
   return user;
 }
 ```
@@ -963,7 +1368,7 @@ export function useUser() {
   async function fetchUser() {
     try {
       const response = await fetch('/api/me');
-      
+
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
@@ -993,133 +1398,403 @@ export function useUser() {
 
 ### 3.3 Authentication Flow Implementation
 
-#### 3.3.1 Login Flow (Google OAuth)
+#### 3.3.1 Registration Flow
 
 **Sequence Diagram**:
 ```
-User -> App: Navigate to protected route
-App -> User: Redirect to /login?redirect=/target
-User -> App: Click "Sign in with Google"
-App -> Google: Redirect to OAuth consent
-Google -> User: Show consent screen
-User -> Google: Approve
-Google -> App: Redirect to /auth/callback?code=xxx
-App -> Supabase: exchangeCodeForSession(code)
-Supabase -> App: Session + User Info
-App -> DB: Validate domain, upsert user
-App -> User: Set session cookie, redirect to /target
+User -> App: Fill registration form (email, password)
+App -> App: Validate input client-side
+User -> App: Submit registration
+App -> Supabase: signUp({ email, password })
+Supabase -> Email: Send verification link
+Supabase -> App: User created (unconfirmed)
+App -> DB: Create user record (if needed)
+App -> User: Show "Check your email" message
+User -> Email: Click verification link
+Email -> Supabase: Confirm email
+Supabase -> App: Redirect to /login?message=email_verified
 ```
 
-**Implementation**: `src/pages/api/auth/google.ts`
+**Implementation**: `src/pages/api/auth/register.ts`
 ```typescript
 export const prerender = false;
 
 import type { APIContext } from 'astro';
-
-export async function GET(context: APIContext): Promise<Response> {
-  const supabase = context.locals.supabase;
-  const redirectUrl = context.url.searchParams.get('redirect') || '/';
-
-  // Validate redirect URL (must be relative path)
-  if (!redirectUrl.startsWith('/')) {
-    return new Response('Invalid redirect', { status: 400 });
-  }
-
-  // Store redirect in cookie for callback
-  context.cookies.set('auth_redirect', redirectUrl, {
-    path: '/',
-    maxAge: 600, // 10 minutes
-    httpOnly: true,
-    secure: import.meta.env.PROD,
-    sameSite: 'lax',
-  });
-
-  // Initiate OAuth flow
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${context.url.origin}/auth/callback`,
-      scopes: 'email profile',
-    },
-  });
-
-  if (error) {
-    console.error('[AUTH] OAuth initiation failed:', error);
-    return context.redirect('/login?error=auth_failed');
-  }
-
-  return context.redirect(data.url);
-}
-```
-
-**Implementation**: `src/pages/api/auth/callback.ts`
-```typescript
-export const prerender = false;
-
-import type { APIContext } from 'astro';
+import { RegisterSchema } from '@/lib/validation/auth.validation';
 import { logAuthFailure, logAuthSuccess } from '@/lib/error-logger';
 
-export async function GET(context: APIContext): Promise<Response> {
+export async function POST(context: APIContext): Promise<Response> {
   const supabase = context.locals.supabase;
-  const code = context.url.searchParams.get('code');
-
-  if (!code) {
-    return context.redirect('/login?error=invalid_code');
-  }
 
   try {
-    // Exchange code for session
-    const { data: { session, user }, error: sessionError } = 
-      await supabase.auth.exchangeCodeForSession(code);
+    // Parse and validate request body
+    const body = await context.request.json();
+    const validation = RegisterSchema.safeParse(body);
 
-    if (sessionError || !session || !user) {
-      logAuthFailure(null, 'Session exchange failed', { error: sessionError });
-      return context.redirect('/login?error=auth_failed');
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({
+          error: 'validation_error',
+          message: 'Invalid input',
+          details: validation.error.errors.map((e) => ({
+            field: e.path[0],
+            message: e.message,
+          })),
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Validate email domain
-    const emailDomain = user.email?.split('@')[1];
-    const allowedDomain = import.meta.env.ALLOWED_EMAIL_DOMAIN || 'goodcompany.com';
+    const { email, password } = validation.data;
 
-    if (emailDomain !== allowedDomain) {
-      await supabase.auth.signOut();
-      logAuthFailure(user.id, 'Domain not allowed', { domain: emailDomain });
-      return context.redirect(`/unauthorized?domain=${emailDomain}`);
+    // Register user with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${context.url.origin}/login?message=email_verified`,
+      },
+    });
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        return new Response(
+          JSON.stringify({
+            error: 'email_already_exists',
+            message: 'An account with this email already exists',
+          }),
+          { status: 409, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      logAuthFailure(null, 'Registration failed', { error, email });
+      return new Response(
+        JSON.stringify({
+          error: 'registration_failed',
+          message: error.message || 'Registration failed',
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Upsert user record
-    const { error: dbError } = await supabase
-      .from('users')
-      .upsert({
-        id: user.id,
-        email: user.email!,
-        display_name: user.user_metadata.full_name || user.email!,
-        google_sub: user.user_metadata.sub,
-        last_seen_at: new Date().toISOString(),
-      }, {
-        onConflict: 'google_sub',
-      });
+    // Create user record in application database
+    if (data.user) {
+      const { error: dbError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email!,
+          display_name: data.user.email!.split('@')[0], // Default display name
+          is_admin: false,
+        });
 
-    if (dbError) {
-      logAuthFailure(user.id, 'Database upsert failed', { error: dbError });
-      return context.redirect('/login?error=server_error');
+      if (dbError && !dbError.message.includes('duplicate')) {
+        logAuthFailure(data.user.id, 'User record creation failed', { error: dbError });
+      }
+
+      logAuthSuccess(data.user.id, 'email_password', { action: 'registration' });
     }
 
-    logAuthSuccess(user.id, 'google_oauth');
-
-    // Retrieve and clear redirect cookie
-    const redirectUrl = context.cookies.get('auth_redirect')?.value || '/';
-    context.cookies.delete('auth_redirect');
-
-    return context.redirect(redirectUrl);
+    return new Response(
+      JSON.stringify({
+        message: 'Registration successful. Please check your email to verify your account.',
+        email,
+      }),
+      { status: 201, headers: { 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    logAuthFailure(null, 'Unexpected error', { error });
-    return context.redirect('/login?error=server_error');
+    logAuthFailure(null, 'Unexpected error during registration', { error });
+    return new Response(
+      JSON.stringify({
+        error: 'server_error',
+        message: 'An unexpected error occurred',
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }
 ```
 
-#### 3.3.2 Logout Flow
+#### 3.3.2 Login Flow
+
+**Sequence Diagram**:
+```
+User -> App: Enter email and password
+App -> App: Validate input client-side
+User -> App: Submit login
+App -> Supabase: signInWithPassword({ email, password })
+Supabase -> App: Session + User Info
+App -> App: Check email confirmed
+App -> DB: Fetch/create user record
+App -> DB: Update last_seen_at
+App -> User: Set session cookie, redirect to dashboard
+```
+
+**Implementation**: `src/pages/api/auth/login.ts`
+```typescript
+export const prerender = false;
+
+import type { APIContext } from 'astro';
+import { LoginSchema } from '@/lib/validation/auth.validation';
+import { logAuthFailure, logAuthSuccess } from '@/lib/error-logger';
+
+export async function POST(context: APIContext): Promise<Response> {
+  const supabase = context.locals.supabase;
+
+  try {
+    // Parse and validate request body
+    const body = await context.request.json();
+    const validation = LoginSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({
+          error: 'validation_error',
+          message: 'Invalid input',
+          details: validation.error.errors.map((e) => ({
+            field: e.path[0],
+            message: e.message,
+          })),
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email, password } = validation.data;
+
+    // Authenticate with Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      logAuthFailure(null, 'Login failed', { error, email });
+      return new Response(
+        JSON.stringify({
+          error: 'invalid_credentials',
+          message: 'Invalid email or password',
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!data.user) {
+      return new Response(
+        JSON.stringify({
+          error: 'auth_failed',
+          message: 'Authentication failed',
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if email is confirmed
+    if (!data.user.email_confirmed_at) {
+      logAuthFailure(data.user.id, 'Email not confirmed', { email });
+      return new Response(
+        JSON.stringify({
+          error: 'email_not_confirmed',
+          message: 'Please verify your email address before signing in',
+        }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch or create user record
+    let { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (userError || !userData) {
+      // User not in database yet, create record
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: data.user.id,
+          email: data.user.email!,
+          display_name: data.user.email!.split('@')[0],
+          is_admin: false,
+          last_seen_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        logAuthFailure(data.user.id, 'User record creation failed', { error: insertError });
+        return new Response(
+          JSON.stringify({
+            error: 'server_error',
+            message: 'Failed to create user record',
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Fetch the newly created record
+      const { data: newUserData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      userData = newUserData!;
+    } else {
+      // Update last_seen_at
+      await supabase
+        .from('users')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', data.user.id);
+    }
+
+    logAuthSuccess(data.user.id, 'email_password', { action: 'login' });
+
+    return new Response(
+      JSON.stringify({
+        user: {
+          id: userData.id,
+          email: userData.email,
+          display_name: userData.display_name,
+          is_admin: userData.is_admin,
+        },
+        message: 'Login successful',
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    logAuthFailure(null, 'Unexpected error during login', { error });
+    return new Response(
+      JSON.stringify({
+        error: 'server_error',
+        message: 'An unexpected error occurred',
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+```
+
+#### 3.3.3 Password Recovery Flow
+
+**Implementation**: `src/pages/api/auth/forgot-password.ts`
+```typescript
+export const prerender = false;
+
+import type { APIContext } from 'astro';
+import { ForgotPasswordSchema } from '@/lib/validation/auth.validation';
+
+export async function POST(context: APIContext): Promise<Response> {
+  const supabase = context.locals.supabase;
+
+  try {
+    const body = await context.request.json();
+    const validation = ForgotPasswordSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({
+          error: 'validation_error',
+          message: 'Invalid email format',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email } = validation.data;
+
+    // Send password recovery email
+    // Note: Supabase doesn't reveal if email exists (security)
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${context.url.origin}/reset-password`,
+    });
+
+    // Always return success (don't reveal if email exists)
+    return new Response(
+      JSON.stringify({
+        message: 'If an account exists with this email, you will receive a password reset link.',
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: 'server_error',
+        message: 'An unexpected error occurred',
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+```
+
+**Implementation**: `src/pages/api/auth/reset-password.ts`
+```typescript
+export const prerender = false;
+
+import type { APIContext } from 'astro';
+import { ResetPasswordSchema } from '@/lib/validation/auth.validation';
+import { logAuthSuccess } from '@/lib/error-logger';
+
+export async function POST(context: APIContext): Promise<Response> {
+  const supabase = context.locals.supabase;
+
+  try {
+    const body = await context.request.json();
+    const validation = ResetPasswordSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({
+          error: 'validation_error',
+          message: 'Invalid input',
+          details: validation.error.errors,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { password } = validation.data;
+
+    // Update password (must be called from authenticated session after token verification)
+    const { data, error } = await supabase.auth.updateUser({
+      password,
+    });
+
+    if (error) {
+      return new Response(
+        JSON.stringify({
+          error: 'invalid_token',
+          message: 'Reset link is invalid or has expired',
+        }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (data.user) {
+      logAuthSuccess(data.user.id, 'email_password', { action: 'password_reset' });
+    }
+
+    return new Response(
+      JSON.stringify({
+        message: 'Password reset successful. You can now sign in with your new password.',
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({
+        error: 'server_error',
+        message: 'An unexpected error occurred',
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+```
+
+#### 3.3.4 Logout Flow
 
 **Implementation**: `src/pages/logout.astro`
 ```typescript
@@ -1134,173 +1809,80 @@ return Astro.redirect('/login?message=logged_out');
 ---
 ```
 
-#### 3.3.3 Session Refresh
+#### 3.3.5 Session Refresh
 
 **Automatic Refresh** (handled by Supabase client):
 - Supabase client auto-refreshes sessions using refresh tokens
 - No manual implementation needed
 - Refresh happens before expiration
 
-**Manual Refresh** (if needed):
-```typescript
-const { data, error } = await supabase.auth.refreshSession();
-```
-
 ### 3.4 Row Level Security (RLS) Policies
 
-**Note**: RLS policies already exist in database schema (`20251019090000_create_initial_schema.sql`). Authentication enables proper enforcement.
+**Note**: RLS policies already exist in database schema. Authentication enables proper enforcement.
 
-#### 3.4.1 RLS Policy Context Setting
+**Key Points**:
+- RLS policies use `auth.uid()` function (Supabase built-in)
+- Policies check `is_admin` flag from `users` table
+- No need for manual context setting (Supabase handles it)
 
-**IMPORTANT**: The existing RLS policies use `current_setting('app.current_user_id')` and `current_setting('app.is_admin')` for authorization. These settings must be explicitly set by the application after authentication.
+**Verification**: Existing RLS policies should work with email/password authentication without changes.
 
-**Implementation Required**: Update middleware to set RLS context after successful authentication:
+### 3.5 Admin Account Management
 
-```typescript
-// src/middleware/index.ts - ADD RLS context setting
-const sessionRefreshMiddleware = defineMiddleware(async (context, next) => {
-  const supabase = context.locals.supabase;
-  const { data: { session } } = await supabase.auth.getSession();
+**PRD Requirement**: "Admin accounts assigned through database updates only" (US-00104)
 
-  if (session?.user) {
-    // Fetch user data for RLS context
-    const { data: userData } = await supabase
-      .from('users')
-      .select('is_admin')
-      .eq('id', session.user.id)
-      .single();
+#### 3.5.1 Admin Assignment Strategy
 
-    if (userData) {
-      // Set RLS context for this request
-      // Note: This requires executing raw SQL or using a custom function
-      await supabase.rpc('set_user_context', {
-        user_id: session.user.id,
-        is_admin: userData.is_admin
-      });
-    }
+Admins are assigned by manually updating the `is_admin` flag in the database. No UI for admin assignment in MVP.
 
-    // Update last_seen_at
-    await supabase
-      .from('users')
-      .update({ last_seen_at: new Date().toISOString() })
-      .eq('id', session.user.id);
-  }
+**Approach: Manual Database Update**
 
-  return next();
-});
-```
-
-**Alternative Approach** (Simpler for MVP): Since RLS policies check `app.current_user_id`, and Supabase automatically sets this from the JWT token, the policies should work without manual context setting. However, for admin checks, we'll continue to fetch `is_admin` from the database explicitly in each endpoint.
-
-**Key Policies**:
-- **Users Table**: 
-  - Users can read own row
-  - Admins can read all rows
-  - Users can update own row (except `is_admin` flag)
-- **Badge Applications**: 
-  - Users can read own applications
-  - Admins can read all applications
-  - Users can create/update own drafts
-- **Promotions**: 
-  - Users can read own promotions
-  - Admins can read all promotions
-  - Users can create/update own drafts
-
-**Verification Needed**: Test that Supabase Auth automatically sets `app.current_user_id` from JWT. If not, we'll need to create a PostgreSQL function to set context.
-
-### 3.5 Admin Account Seeding
-
-**PRD Requirement**: "Admin accounts seeded at deploy for MVP" (FR-001)
-
-#### 3.5.1 Admin Seeding Strategy
-
-Since authentication happens via Google OAuth, admin accounts cannot be pre-created in the traditional sense. Instead, we'll use a database migration or initialization script to mark specific Google accounts as admins.
-
-**Approach 1: Post-Login Admin Elevation (Recommended for MVP)**
-
-Create a database migration that marks known email addresses as admin after their first login:
+After a user registers and logs in, update their record to grant admin privileges:
 
 ```sql
--- Migration: Mark admin users
--- File: supabase/migrations/[timestamp]_seed_admin_users.sql
+-- Run this in Supabase SQL Editor
+UPDATE users
+SET is_admin = TRUE
+WHERE email = 'admin@company.com';
+```
 
--- Function to automatically elevate known admins on first login
-CREATE OR REPLACE FUNCTION elevate_admin_users()
-RETURNS TRIGGER AS $$
-DECLARE
-  admin_emails TEXT[] := ARRAY[
-    'admin@goodcompany.com',
-    'manager@goodcompany.com'
-    -- Add more admin emails here
-  ];
+**Alternative: Database Function**
+
+Create a secure database function that only superadmins can call:
+
+```sql
+-- Migration: Create admin assignment function
+CREATE OR REPLACE FUNCTION assign_admin(user_email TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
 BEGIN
-  IF NEW.email = ANY(admin_emails) THEN
-    NEW.is_admin := TRUE;
-  END IF;
-  RETURN NEW;
+  UPDATE users
+  SET is_admin = TRUE
+  WHERE email = user_email;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
--- Trigger to run on user insert
-CREATE TRIGGER auto_elevate_admins
-  BEFORE INSERT ON users
-  FOR EACH ROW
-  EXECUTE FUNCTION elevate_admin_users();
-
--- Also update existing users if they're already in the system
-UPDATE users
-SET is_admin = TRUE
-WHERE email IN (
-  'admin@goodcompany.com',
-  'manager@goodcompany.com'
-);
+-- Restrict access to function
+REVOKE ALL ON FUNCTION assign_admin(TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION assign_admin(TEXT) TO postgres;
 ```
 
-**Approach 2: Manual Database Update (Simpler)**
-
-After deployment, manually update specific users to admin via SQL:
-
+**Usage**:
 ```sql
--- Run this in Supabase SQL Editor after first admin login
-UPDATE users
-SET is_admin = TRUE
-WHERE email = 'admin@goodcompany.com';
+SELECT assign_admin('admin@company.com');
 ```
 
-**Approach 3: Environment Variable Configuration**
+#### 3.5.2 Admin Assignment Checklist
 
-Store admin emails in environment variable and check during user upsert:
-
-```typescript
-// src/pages/api/auth/callback.ts
-const adminEmails = (import.meta.env.ADMIN_EMAILS || '').split(',').map(e => e.trim());
-const isAdmin = adminEmails.includes(user.email);
-
-const { error: dbError } = await supabase
-  .from('users')
-  .upsert({
-    id: user.id,
-    email: user.email!,
-    display_name: user.user_metadata.full_name || user.email!,
-    google_sub: user.user_metadata.sub,
-    is_admin: isAdmin, // Set based on environment config
-    last_seen_at: new Date().toISOString(),
-  }, {
-    onConflict: 'google_sub',
-    ignoreDuplicates: false, // Always update
-  });
-```
-
-**Recommended Approach**: Use Approach 1 (database trigger) for automatic admin elevation, supplemented by Approach 2 (manual SQL) for immediate admin access during deployment.
-
-#### 3.5.2 Admin Seeding Checklist
-
-- [ ] Create migration with admin email list
-- [ ] Deploy migration to production
-- [ ] Have first admin user login via OAuth
-- [ ] Verify admin flag is set correctly
-- [ ] Test admin-only routes and features
-- [ ] Document process for adding future admins
+- [ ] User must register and verify email first
+- [ ] User must log in at least once
+- [ ] Admin runs SQL to set `is_admin = TRUE`
+- [ ] User logs out and back in to get updated permissions
+- [ ] Verify admin routes are accessible
+- [ ] Test admin-only features
+- [ ] Document process for future admin assignments
 
 ### 3.6 Environment Variables
 
@@ -1310,14 +1892,6 @@ const { error: dbError } = await supabase
 SUPABASE_URL=https://[project-ref].supabase.co
 SUPABASE_KEY=[anon-key]
 SUPABASE_SERVICE_ROLE_KEY=[service-role-key]  # Only for migrations/admin tasks
-
-# Authentication
-ALLOWED_EMAIL_DOMAIN=goodcompany.com
-
-# Admin Seeding (Optional - for Approach 3)
-ADMIN_EMAILS=admin@goodcompany.com,manager@goodcompany.com
-
-# Google OAuth (configured in Supabase Dashboard - no env vars needed)
 ```
 
 **Update**: `src/env.d.ts`
@@ -1326,21 +1900,9 @@ interface ImportMetaEnv {
   readonly SUPABASE_URL: string;
   readonly SUPABASE_KEY: string;
   readonly SUPABASE_SERVICE_ROLE_KEY: string;
-  readonly ALLOWED_EMAIL_DOMAIN: string;
-  readonly ADMIN_EMAILS?: string; // Optional
   readonly OPENROUTER_API_KEY: string;
 }
 ```
-
-### 3.7 Password Recovery (Out of Scope for MVP)
-
-**Future Implementation Notes**:
-- MVP uses OAuth-only (no password-based auth)
-- Password recovery not needed
-- If password auth is added later:
-  - Use Supabase `resetPasswordForEmail()`
-  - Configure email templates
-  - Create password reset pages
 
 ---
 
@@ -1350,124 +1912,81 @@ This section verifies that each User Story from the PRD can be implemented with 
 
 ### 4.1 User Story Mapping
 
-**US-001: User Authentication via Google Workspace SSO** ✅
+**US-001: User Authentication via email and password** ✅
 - **Specification Coverage**:
-  - Section 3.3.1: Google OAuth login flow implementation
-  - Section 2.1.1: Authentication endpoints (`/auth/google`, `/auth/callback`)
-  - Section 3.1.1: Supabase OAuth provider setup
-  - Section 1.5.1-1.5.2: First-time and returning user login flows
+  - Section 3.3.2: Email/password login flow implementation
+  - Section 2.1.1: Authentication endpoints (`/api/auth/login`)
+  - Section 3.1.1: Supabase email authentication setup
+  - Section 1.5.2: Returning user login flow
 - **Acceptance Criteria Mapping**:
-  - Login flow supports Google SSO (OIDC) → ✅ Section 3.3.1
-  - Only emails from configured domain can sign in → ✅ Section 2.1.1 (callback domain validation)
-  - Admin accounts seeded at deploy → ✅ Section 3.5 (Admin Account Seeding)
-  - Unauthorized domain emails receive clear error → ✅ Section 1.4.2 (Error Messages)
+  - Admin accounts seeded at deploy → ✅ Section 3.5 (Manual admin assignment)
+  - Unauthorized users receive clear error message → ✅ Section 1.4.3 (Error Messages)
+
+**US-00101: User registration via registration form** ✅
+- **Specification Coverage**:
+  - Section 3.3.1: Registration flow implementation
+  - Section 2.1.1: `/api/auth/register` endpoint
+  - Section 1.2.1: Register page and form
+  - Section 1.5.1: First-time user registration flow
+- **Acceptance Criteria Mapping**:
+  - Registration forbids already registered emails → ✅ Email uniqueness check
+  - Requires email and password → ✅ Validation schema enforces both
+  - Password must be at least 8 characters → ✅ Client and server validation
+
+**US-00102: User sign out via sign out button** ✅
+- **Specification Coverage**:
+  - Section 3.3.4: Logout flow implementation
+  - Section 2.1.1: `/api/auth/logout` endpoint
+  - Section 1.5.4: Logout user scenario
+  - Section 1.3.1: UserMenu component with sign out
+- **Acceptance Criteria Mapping**:
+  - Sign out redirects to login page → ✅ Redirects to `/login?message=logged_out`
+  - Sign out clears user session → ✅ Calls `supabase.auth.signOut()` and clears cookies
+
+**US-00103: User password recovery** ✅
+- **Specification Coverage**:
+  - Section 3.3.3: Password recovery flow implementation
+  - Section 2.1.1: `/api/auth/forgot-password` and `/api/auth/reset-password` endpoints
+  - Section 1.2.1: Forgot password and reset password pages
+  - Section 1.5.3: Password recovery user scenario
+- **Acceptance Criteria Mapping**:
+  - Requires email to be provided → ✅ Email validation in forgot password form
+  - Provides one-time recovery link → ✅ Supabase sends token-based email link
+  - New password overrides old → ✅ `updateUser({ password })` replaces password
+  - One-time link invalidated once opened → ✅ Supabase automatically invalidates tokens
+
+**US-00104: Administrative rights** ✅
+- **Specification Coverage**:
+  - Section 3.5: Admin account management
+  - Section 2.2.1: User model with `is_admin` flag
+  - Section 1.6.2: Admin route guards
+- **Acceptance Criteria Mapping**:
+  - Admin rights assigned only through database updates → ✅ Manual SQL update required
 
 **US-002: View Badge Catalog (standard user)** ✅
 - **Auth Requirements**: User must be authenticated to access catalog
 - **Specification Coverage**:
-  - Section 1.2.2: Modified existing pages (catalog.astro) with auth guards
+  - Section 1.2.2: Modified existing pages with auth guards
   - Section 2.1.2: Modified API endpoints with authentication checks
   - Section 1.6.2: Route guards implementation pattern
-- **Implementation**: `/catalog` page checks authentication, redirects to `/login` if not authenticated
 
 **US-003: Admin Catalog Management** ✅
 - **Auth Requirements**: User must be authenticated AND have `is_admin = true`
 - **Specification Coverage**:
-  - Section 1.6.2: Admin route guards (requireAdmin helper)
-  - Section 3.2.2: `requireAdmin()` server-side helper function
-  - Section 1.3.1: UserMenu component shows admin link only if `is_admin`
-- **Implementation**: Admin actions check `is_admin` flag from authenticated user
-
-**US-004: Draft Badge Application** ✅
-- **Auth Requirements**: User must be authenticated to create drafts
-- **Specification Coverage**:
-  - Section 2.1.2: API endpoints validate authenticated user
-  - Section 1.2.2: Application pages include auth guards
-  - Ownership verified by comparing `applicantId` to authenticated `userId`
-- **Implementation**: Draft endpoints use authenticated user's ID for ownership
-
-**US-005: Submit Badge Application** ✅
-- **Auth Requirements**: User must be authenticated and be the application owner
-- **Specification Coverage**:
-  - Section 2.1.2: Authentication pattern for protected endpoints
-  - Server records `applicantId` from authenticated session
-- **Implementation**: Submit endpoint validates user owns the application
-
-**US-006: Admin Review Badge Application** ✅
-- **Auth Requirements**: User must be authenticated AND have `is_admin = true`
-- **Specification Coverage**:
   - Section 1.6.2: Admin route guards
-  - Section 2.1.2: Admin-only endpoint pattern with `isAdmin` check
-  - Records `reviewedBy` from authenticated admin user ID
-- **Implementation**: Review endpoints check `isAdmin` before allowing accept/reject
+  - Section 3.2.2: `requireAdmin()` server-side helper function
 
-**US-007: Create Promotion Draft** ✅
-- **Auth Requirements**: User must be authenticated
-- **Specification Coverage**:
-  - Section 2.1.2: Protected endpoint pattern
-  - Uses authenticated `userId` as `createdBy`
-- **Implementation**: Promotion creation uses authenticated user ID
-
-**US-008: Eligibility Preview and Submit Promotion** ✅
-- **Auth Requirements**: User must be authenticated and own the promotion
-- **Specification Coverage**:
-  - Section 2.1.2: Authentication checks on promotion endpoints
-  - Section 1.5.4: Session expiration handling for long-form interactions
-- **Implementation**: Validation and submit check authenticated user owns promotion
-
-**US-009: Admin Review Promotion** ✅
-- **Auth Requirements**: User must be authenticated AND have `is_admin = true`
-- **Specification Coverage**:
-  - Section 1.6.2: Admin-only route protection
-  - Section 2.1.2: Admin endpoint authentication pattern
-  - Records `approvedBy`/`rejectedBy` from authenticated admin
-- **Implementation**: Promotion review endpoints verify admin role
-
-**US-010: Reservation Conflict Handling** ✅
-- **Auth Requirements**: User must be authenticated to receive conflict information
-- **Specification Coverage**:
-  - Section 2.1.2: Authenticated endpoints return structured errors
-  - No specific auth conflicts (conflict handling works with authenticated users)
-- **Implementation**: Conflict modal shows for authenticated users only
-
-**US-011: Admin Context Controls** ✅
-- **Auth Requirements**: User must be authenticated with `is_admin = true`
-- **Specification Coverage**:
-  - Section 1.6.1: Header navigation shows admin link conditionally
-  - Section 1.3.1: UserMenu component includes admin route
-  - Section 1.3.2: All React views receive `isAdmin` prop
-- **Implementation**: UI conditionally renders admin controls based on `isAdmin` flag
-
-**US-012: My Badges and Promotions View** ✅
-- **Auth Requirements**: User must be authenticated to view their items
-- **Specification Coverage**:
-  - Section 1.2.2: Dashboard and other pages include auth guards
-  - Section 2.1.2: API endpoints filter by authenticated `userId`
-- **Implementation**: Dashboard fetches data for authenticated user only
-
-**US-013: Data Integrity and IDs** ✅
-- **Auth Requirements**: No direct auth requirement, but user creation uses UUIDs
-- **Specification Coverage**:
-  - Section 2.2.1: User model uses UUID matching Supabase Auth user ID
-  - Auth system preserves user ID consistency
-- **Implementation**: Supabase Auth generates UUIDs, synced to users table
-
-**US-014: Logging** ✅
-- **Auth Requirements**: Log auth failures and success events
-- **Specification Coverage**:
-  - Section 2.4.2: Authentication event logging (logAuthFailure, logAuthSuccess)
-  - Section 2.4.3: Audit logging to database
-  - Section 5.5: Audit logging for auth events
-- **Acceptance Criteria Mapping**:
-  - Auth failures logged → ✅ Section 2.4.2
-  - Timestamps and contextual fields → ✅ Logged with userId, reason, metadata
-  - Logs accessible to dev/ops → ✅ Console logs + audit_logs table
+**US-004-014: Other User Stories** ✅
+- All other user stories follow the same authentication patterns
+- Protected endpoints check authentication
+- Admin endpoints check `is_admin` flag
+- User ownership verified by comparing IDs
 
 ### 4.2 Authentication Coverage Summary
 
 | Functional Requirement | Auth Spec Coverage | Notes |
 |------------------------|-------------------|--------|
-| FR-001: Authentication | Sections 1-3 | Complete OAuth implementation |
+| FR-001: Authentication | Sections 1-3 | Complete email/password implementation |
 | FR-002: Badge Catalog | Section 2.1.2 | Auth guards on pages and APIs |
 | FR-003: Badge Applications | Section 2.1.2 | Ownership via authenticated userId |
 | FR-004: Promotion Templates | Section 2.1.2 | Protected endpoints |
@@ -1479,46 +1998,32 @@ This section verifies that each User Story from the PRD can be implemented with 
 | FR-010: Import/Migration | N/A | Out of scope |
 | FR-011: Position Levels | Section 2.1.2 | Protected endpoint pattern |
 
-### 4.3 Identified Conflicts and Resolutions
+### 4.3 Identified Changes from Previous Specification
 
-#### Conflict 1: RLS Policy Context Setting ⚠️
-**Issue**: Existing RLS policies use `current_setting('app.current_user_id')` and `current_setting('app.is_admin')`, but it's unclear if Supabase Auth automatically sets these.
+#### Change 1: Authentication Method
+**Previous**: Google OAuth SSO with domain restriction
+**Current**: Email/password authentication with email verification
+**Impact**:
+- More user stories to implement (registration, password recovery)
+- Simpler setup (no OAuth provider configuration)
+- Email verification adds complexity
+- No domain restriction needed
 
-**Resolution**: 
-- **Option A**: Test if Supabase automatically populates `app.current_user_id` from JWT
-- **Option B**: Create database function `set_user_context()` and call from middleware
-- **Option C**: Continue using explicit authorization checks in endpoints (current approach)
+#### Change 2: Admin Seeding
+**Previous**: Auto-elevation via database trigger or environment variable
+**Current**: Manual database update only (per US-00104)
+**Impact**:
+- Simpler implementation
+- More manual process
+- Requires documentation for operations team
 
-**Recommendation**: Use Option C for MVP (explicit checks in endpoints), then migrate to Option A/B if RLS context is needed.
-
-**Updated in**: Section 3.4.1
-
-#### Conflict 2: Admin Account Seeding ⚠️
-**Issue**: PRD states "Admin accounts seeded at deploy" but OAuth prevents pre-creating accounts before users log in.
-
-**Resolution**: Three approaches provided:
-1. Database trigger to auto-elevate known admin emails (Recommended)
-2. Manual SQL update after first login
-3. Environment variable configuration
-
-**Recommendation**: Use approach 1 (database trigger) + approach 2 (manual SQL) for flexibility.
-
-**Updated in**: Section 3.5
-
-#### Conflict 3: SAML Support 🔍
-**Issue**: PRD mentions "OIDC/SAML" but specification only implements OIDC via Google OAuth.
-
-**Clarification**: SAML support deferred to future enhancement. MVP uses OIDC only.
-
-**Updated in**: Section 7.1 (Future Enhancements)
-
-### 4.4 Assumptions Validated
-
-✅ **OAuth-Only Authentication**: PRD confirms "No manual account creation", aligns with OAuth-only approach  
-✅ **Domain Restriction**: Server-side validation required per FR-001  
-✅ **Two-Tier Roles**: Only `administrator` and `standard user` needed for MVP  
-✅ **Session Management**: Supabase Auth handles session lifecycle automatically  
-✅ **Password Recovery Not Needed**: Out of scope per PRD Section 4 (Product Boundaries)  
+#### Change 3: Session Management
+**Previous**: OAuth tokens and sessions
+**Current**: Email/password sessions with Supabase Auth
+**Impact**:
+- No changes to session management logic
+- Same Supabase Auth infrastructure
+- Same cookie-based session storage
 
 ---
 
@@ -1528,17 +2033,33 @@ This section verifies that each User Story from the PRD can be implemented with 
 
 #### Auth Pages
 - [ ] `src/pages/login.astro` - Login page
+- [ ] `src/pages/register.astro` - Registration page
+- [ ] `src/pages/verify-email.astro` - Email verification instructions
+- [ ] `src/pages/forgot-password.astro` - Password recovery initiation
+- [ ] `src/pages/reset-password.astro` - Password reset with token
 - [ ] `src/pages/logout.astro` - Logout endpoint
 - [ ] `src/pages/unauthorized.astro` - Unauthorized access page
-- [ ] `src/pages/api/auth/google.ts` - OAuth initiation
-- [ ] `src/pages/api/auth/callback.ts` - OAuth callback handler
+
+#### Auth API Endpoints
+- [ ] `src/pages/api/auth/register.ts` - User registration
+- [ ] `src/pages/api/auth/login.ts` - User login
+- [ ] `src/pages/api/auth/logout.ts` - User logout
+- [ ] `src/pages/api/auth/forgot-password.ts` - Password recovery initiation
+- [ ] `src/pages/api/auth/reset-password.ts` - Password reset with token
+- [ ] `src/pages/api/auth/resend-verification.ts` - Resend verification email
 - [ ] `src/pages/api/auth/session.ts` - Session info endpoint
 - [ ] `src/pages/api/me.ts` - Current user endpoint
 
 #### Auth Components
 - [ ] `src/components/auth/LoginView.tsx` - Login interface
-- [ ] `src/components/auth/GoogleSignInButton.tsx` - OAuth button
+- [ ] `src/components/auth/RegisterView.tsx` - Registration interface
+- [ ] `src/components/auth/ForgotPasswordView.tsx` - Forgot password interface
+- [ ] `src/components/auth/ResetPasswordView.tsx` - Reset password interface
+- [ ] `src/components/auth/VerifyEmailView.tsx` - Email verification instructions
+- [ ] `src/components/auth/EmailPasswordForm.tsx` - Email/password inputs
+- [ ] `src/components/auth/PasswordStrengthIndicator.tsx` - Password strength meter
 - [ ] `src/components/auth/AuthErrorAlert.tsx` - Error display
+- [ ] `src/components/auth/AuthSuccessAlert.tsx` - Success message display
 - [ ] `src/components/navigation/UserMenu.tsx` - User dropdown
 
 #### Auth Logic
@@ -1550,9 +2071,12 @@ This section verifies that each User Story from the PRD can be implemented with 
 ### 5.2 Files to Modify
 
 #### Configuration
-- [x] `src/db/supabase.client.ts` - Switch to anon key, enable auth options
-- [x] `src/middleware/index.ts` - Add session refresh middleware
-- [x] `src/env.d.ts` - Add `ALLOWED_EMAIL_DOMAIN`
+- [ ] `src/db/supabase.client.ts` - Use anon key, enable auth options with PKCE
+- [ ] `src/middleware/index.ts` - Add session refresh middleware
+- [ ] `src/env.d.ts` - Update environment variables
+
+#### Database Migration
+- [ ] Create migration to remove `google_sub` column from `users` table
 
 #### Layout
 - [ ] `src/layouts/Layout.astro` - Add user prop, conditionally render nav
@@ -1578,73 +2102,79 @@ This section verifies that each User Story from the PRD can be implemented with 
 ### 5.3 External Configuration
 
 #### Supabase Dashboard
-- [ ] Enable Google OAuth provider
-- [ ] Configure OAuth credentials (Client ID/Secret)
+- [ ] Enable Email authentication provider
+- [ ] Configure email templates (confirmation, password reset)
 - [ ] Set session duration (3600s)
 - [ ] Enable refresh token rotation
-- [ ] Enable auto-confirm users
-
-#### Google Cloud Console
-- [ ] Create OAuth 2.0 Client ID
-- [ ] Configure authorized origins
-- [ ] Configure redirect URIs
-- [ ] Set up OAuth consent screen
-- [ ] Add application logo and description
+- [ ] Set email confirmation required
+- [ ] Set minimum password length (8)
 
 #### Environment Variables
-- [ ] Add `ALLOWED_EMAIL_DOMAIN` to `.env`
+- [ ] Update `.env` with Supabase credentials
 - [ ] Document all env vars in `.env.example`
 - [ ] Update deployment configurations
 
 ### 5.4 Testing Requirements
 
 #### Manual Testing
-- [ ] First-time user login (domain match)
-- [ ] First-time user login (domain mismatch)
-- [ ] Returning user login
+- [ ] User registration with valid email
+- [ ] User registration with duplicate email (error)
+- [ ] Email verification link click
+- [ ] Login with verified account
+- [ ] Login with unverified account (error)
+- [ ] Login with invalid credentials (error)
+- [ ] Password recovery initiation
+- [ ] Password reset with valid token
+- [ ] Password reset with expired token (error)
 - [ ] Session expiration handling
 - [ ] Logout flow
 - [ ] Admin vs. standard user permissions
 - [ ] Redirect after login to intended destination
-- [ ] Concurrent sessions (multiple tabs)
 
 #### Automated Testing (Optional for MVP)
 - [ ] Unit tests for validation schemas
 - [ ] Integration tests for auth endpoints
-- [ ] E2E tests for complete auth flow
+- [ ] E2E tests for complete auth flows
 
 ### 5.5 Documentation
 
 - [ ] Update README with authentication setup instructions
-- [ ] Document environment variable requirements
-- [ ] Create Google OAuth setup guide
+- [ ] Document email template configuration
 - [ ] Update API documentation with auth requirements
+- [ ] Create admin assignment guide
 - [ ] Document troubleshooting steps for common auth issues
+- [ ] Update `.ai/auth-disabled-notice.md` to reflect new implementation
 
 ---
 
 ## 6. SECURITY CONSIDERATIONS
 
-### 6.1 OAuth Security
+### 6.1 Password Security
 
-**CSRF Protection**:
-- Use state parameter in OAuth flow
-- Validate state on callback
-- Store state in httpOnly cookie
+**Password Policy**:
+- Minimum 8 characters (configurable in Supabase)
+- Client-side strength indicator (UX)
+- No maximum length restriction
+- Server-side validation enforced
 
-**Token Security**:
-- Use httpOnly cookies for session tokens (Supabase default)
-- Never expose tokens in localStorage
-- Set secure flag in production
-- Use SameSite=Lax for CSRF protection
+**Best Practices**:
+- Passwords never logged or stored in plaintext
+- Supabase handles bcrypt hashing automatically
+- Password reset tokens are one-time use
+- Tokens expire after 1 hour (configurable)
 
-### 6.2 Domain Restriction
+### 6.2 Email Verification
 
-**Email Validation**:
-- Validate domain server-side (never trust client)
-- Reject unauthorized domains immediately
-- Log rejection attempts for monitoring
-- Clear session before rejection redirect
+**Security Benefits**:
+- Prevents account creation with fake emails
+- Confirms user owns the email address
+- Required before login (configurable)
+
+**Implementation**:
+- Supabase sends verification email on signup
+- Link contains secure token
+- Token expires after 24 hours (default)
+- User can request new verification email
 
 ### 6.3 Session Management
 
@@ -1664,27 +2194,47 @@ This section verifies that each User Story from the PRD can be implemented with 
 }
 ```
 
-### 6.4 Rate Limiting (Future Enhancement)
+### 6.4 Rate Limiting
 
-**Recommendations**:
-- Limit login attempts per IP
-- Limit OAuth callback retries
-- Monitor for suspicious patterns
-- Implement exponential backoff
+**Supabase Built-in Limits**:
+- Password reset: 60 seconds between requests
+- Login attempts: Configurable in dashboard
+- Registration: Configurable in dashboard
 
-### 6.5 Audit Logging
+**Future Enhancements**:
+- Custom rate limiting per IP
+- Account lockout after N failed attempts
+- CAPTCHA on repeated failures
+
+### 6.5 Token Security
+
+**Password Reset Tokens**:
+- Cryptographically secure random tokens
+- One-time use (invalidated after reset)
+- Expire after 1 hour
+- Sent only to registered email
+
+**Session Tokens**:
+- JWT tokens with signature verification
+- HttpOnly cookies prevent XSS
+- SameSite cookies prevent CSRF
+- Refresh token rotation enabled
+
+### 6.6 Audit Logging
 
 **Log Events**:
+- Successful registrations
 - Successful logins
 - Failed login attempts
-- Domain restriction violations
+- Password reset requests
+- Password resets completed
 - Session expirations
 - Logout events
 
-**Log Retention**:
+**Log Storage**:
 - Store in `audit_logs` table
+- Include timestamp, user ID, IP address, user agent
 - Retain for compliance requirements
-- Include IP address, user agent, timestamp
 
 ---
 
@@ -1693,61 +2243,75 @@ This section verifies that each User Story from the PRD can be implemented with 
 ### 7.1 Pre-Production Checklist
 
 - [ ] Remove all `TODO` comments for authentication
-- [ ] Remove development mode bypasses
-- [ ] Switch from service role key to anon key
+- [ ] Ensure anon key is used (not service role)
 - [ ] Enable Row Level Security enforcement
-- [ ] Test with real Google Workspace account
-- [ ] Configure production OAuth credentials
+- [ ] Test with real email addresses
+- [ ] Configure production Supabase project
+- [ ] Set up email service (SMTP or provider)
+- [ ] Configure email templates with branding
 - [ ] Set up monitoring and alerts
+- [ ] Document admin assignment process
 
 ### 7.2 Production Configuration
 
 **Environment**:
-- [ ] Set `ALLOWED_EMAIL_DOMAIN` to actual domain
-- [ ] Use production Supabase project
-- [ ] Configure production OAuth redirect URLs
+- [ ] Set production Supabase URL and keys
+- [ ] Configure production email sender
 - [ ] Enable HTTPS enforcement
 - [ ] Set secure cookie flags
+- [ ] Configure CORS for production domain
+
+**Email Service**:
+- [ ] Set up SMTP provider (SendGrid, AWS SES, etc.)
+- [ ] Configure SPF, DKIM, DMARC records
+- [ ] Test email deliverability
+- [ ] Set up email bounce handling
 
 **Monitoring**:
 - [ ] Monitor auth failure rate
 - [ ] Alert on unusual login patterns
+- [ ] Track registration rate
+- [ ] Monitor email delivery failures
 - [ ] Track session duration metrics
-- [ ] Monitor token refresh failures
 
 ### 7.3 Rollback Plan
 
 **If Issues Arise**:
-1. Revert to development mode (service role key)
-2. Disable OAuth provider in Supabase
-3. Add notice banner explaining maintenance
-4. Debug in staging environment
-5. Deploy fix with thorough testing
+1. Disable new registrations in Supabase dashboard
+2. Add maintenance notice on login page
+3. Debug in staging environment
+4. Deploy fix with thorough testing
+5. Re-enable registrations
+6. Notify affected users if needed
 
 ---
 
 ## 8. FUTURE ENHANCEMENTS (Out of Scope for MVP)
 
-### 8.1 Additional Auth Methods
+### 8.1 Additional Auth Features
 
-- **SAML SSO**: For enterprise customers with IdP
-- **Magic Links**: Email-based passwordless auth
+- **Social Login**: Google, GitHub, etc. (OAuth providers)
+- **Magic Links**: Passwordless email authentication
 - **Multi-Factor Authentication**: TOTP or SMS-based 2FA
+- **SSO Integration**: SAML for enterprise customers
+- **Biometric Auth**: Face ID, fingerprint on mobile
 
 ### 8.2 Advanced Features
 
 - **Session Management Dashboard**: View/revoke active sessions
 - **Login History**: Track login events per user
-- **Role Hierarchy**: More granular permissions beyond admin/user
-- **Team/Organization Support**: Multi-tenant architecture
-- **API Keys**: For programmatic access
+- **Account Recovery**: Alternative recovery methods
+- **Password Expiration**: Force password change after N days
+- **Account Lockout**: After N failed login attempts
+- **Login Notifications**: Email on new device login
 
 ### 8.3 User Profile Management
 
 - **Profile Settings Page**: Edit display name, avatar
-- **Notification Preferences**: Email notification toggles
-- **Privacy Settings**: Control data visibility
+- **Email Change**: With verification for new email
+- **Password Change**: In-app password update
 - **Account Deletion**: GDPR-compliant self-service deletion
+- **Data Export**: Download user data
 
 ---
 
@@ -1757,33 +2321,46 @@ This section verifies that each User Story from the PRD can be implemented with 
 
 | Code | HTTP Status | User Message | Action |
 |------|-------------|--------------|--------|
-| `invalid_domain` | 403 | Domain not authorized | Redirect to `/unauthorized` |
-| `auth_failed` | 401 | Authentication failed | Retry OAuth flow |
-| `session_expired` | 401 | Session expired | Redirect to `/login` |
+| `invalid_credentials` | 401 | Invalid email or password | Retry login |
+| `email_already_exists` | 409 | Email already registered | Sign in instead |
+| `weak_password` | 400 | Password too weak | Choose stronger password |
+| `passwords_dont_match` | 400 | Passwords don't match | Re-enter passwords |
+| `email_not_confirmed` | 403 | Email not verified | Check email for link |
+| `invalid_token` | 401 | Link invalid/expired | Request new link |
+| `session_expired` | 401 | Session expired | Redirect to login |
 | `user_not_found` | 401 | User not found | Contact support |
 | `server_error` | 500 | Unexpected error | Retry later |
-| `invalid_code` | 400 | Invalid auth code | Restart OAuth flow |
-| `invalid_redirect` | 400 | Invalid redirect URL | Use default redirect |
 
 ### 9.2 User Flow Diagrams
 
-**Login Flow**:
+**Registration Flow**:
 ```
-┌──────┐     ┌─────────┐     ┌────────┐     ┌──────────┐     ┌──────┐
-│ User │────▶│ /login  │────▶│ Google │────▶│ Callback │────▶│  /   │
-└──────┘     └─────────┘     └────────┘     └──────────┘     └──────┘
-   │             │                │               │              │
-   │   View      │  OAuth         │  Consent      │  Session     │  Auth
-   │   Login     │  Redirect      │  & Approve    │  Exchange    │  Success
+┌──────┐     ┌──────────┐     ┌──────────┐     ┌────────┐     ┌──────────┐
+│ User │────▶│ Register │────▶│ Supabase │────▶│ Email  │────▶│ Verified │
+└──────┘     └──────────┘     └──────────┘     └────────┘     └──────────┘
+   │             │                  │                │              │
+   │   Fill      │  Create          │  Send         │  Click       │  Login
+   │   Form      │  Account         │  Link         │  Link        │  Enabled
 ```
 
-**Session Expired**:
+**Login Flow**:
 ```
-┌──────┐     ┌──────────┐     ┌─────────┐     ┌────────┐
-│ User │────▶│ Request  │────▶│ 401     │────▶│ /login │
-└──────┘     └──────────┘     └─────────┘     └────────┘
-   │             │                  │              │
-   │   Action    │  Auth Check      │  Redirect    │  Re-auth
+┌──────┐     ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌──────┐
+│ User │────▶│ Login   │────▶│ Validate │────▶│ Session  │────▶│  /   │
+└──────┘     └─────────┘     └──────────┘     └──────────┘     └──────┘
+   │             │                 │                │              │
+   │   Enter     │  Submit         │  Check         │  Create      │  Auth
+   │   Creds     │  Form           │  Password      │  Cookie      │  Success
+```
+
+**Password Recovery**:
+```
+┌──────┐     ┌────────────┐     ┌────────┐     ┌───────────┐     ┌─────────┐
+│ User │────▶│ Forgot PW  │────▶│ Email  │────▶│ Reset PW  │────▶│ Login   │
+└──────┘     └────────────┘     └────────┘     └───────────┘     └─────────┘
+   │             │                   │               │                │
+   │   Request   │  Send             │  Click        │  Set New       │  Sign In
+   │   Reset     │  Link             │  Link         │  Password      │  Success
 ```
 
 ### 9.3 Type Definitions
@@ -1797,14 +2374,23 @@ export interface AuthSession {
   expiresAt: string;
 }
 
-export interface GoogleOAuthProfile {
-  sub: string;
+export interface RegistrationRequest {
   email: string;
-  email_verified: boolean;
-  name: string;
-  picture?: string;
-  given_name?: string;
-  family_name?: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  password: string;
 }
 
 export interface LoginError {
@@ -1813,41 +2399,82 @@ export interface LoginError {
   details?: Record<string, unknown>;
 }
 
-export interface OAuthCallbackParams {
-  code: string;
-  state: string;
+export interface PasswordStrength {
+  score: number; // 0-4
+  feedback: string[];
+  warning: string | null;
 }
 ```
 
 ### 9.4 Sample Requests/Responses
 
-**Login Initiation**:
+**Registration**:
 ```
-GET /api/auth/google?redirect=/catalog/123
-→ HTTP 302 Redirect to Google OAuth
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "SecurePassword123"
+}
+
+Response 201:
+{
+  "message": "Registration successful. Please check your email to verify your account.",
+  "email": "user@example.com"
+}
 ```
 
-**OAuth Callback**:
+**Login**:
 ```
-GET /api/auth/callback?code=xxx&state=yyy
-→ HTTP 302 Redirect to /catalog/123
-Set-Cookie: sb-access-token=...; HttpOnly; Secure
-```
+POST /api/auth/login
+Content-Type: application/json
 
-**Get Session**:
-```
-GET /api/auth/session
-Cookie: sb-access-token=...
+{
+  "email": "user@example.com",
+  "password": "SecurePassword123"
+}
 
 Response 200:
 {
   "user": {
     "id": "uuid",
-    "email": "user@goodcompany.com",
-    "display_name": "John Doe",
+    "email": "user@example.com",
+    "display_name": "User Name",
     "is_admin": false
   },
-  "authenticated": true
+  "message": "Login successful"
+}
+```
+
+**Forgot Password**:
+```
+POST /api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+
+Response 200:
+{
+  "message": "If an account exists with this email, you will receive a password reset link."
+}
+```
+
+**Reset Password**:
+```
+POST /api/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "recovery_token_from_email",
+  "password": "NewSecurePassword123"
+}
+
+Response 200:
+{
+  "message": "Password reset successful. You can now sign in with your new password."
 }
 ```
 
@@ -1866,4 +2493,3 @@ Response 200:
 ---
 
 **End of Specification**
-
