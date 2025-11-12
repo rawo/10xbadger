@@ -108,8 +108,13 @@ pnpm test:e2e --grep "Authentication"
 # Login page tests
 pnpm test:e2e --grep "Login Page"
 
-# Badge application tests
+# Badge application lifecycle tests
 pnpm test:e2e --grep "Badge Application"
+
+# Specific test scenarios
+pnpm test:e2e --grep "BA-01"  # Create and save draft
+pnpm test:e2e --grep "BA-02"  # Edit and submit draft
+pnpm test:e2e --grep "BA-05"  # Prevent editing non-draft
 ```
 
 ### Run Single Test
@@ -140,23 +145,30 @@ These tests require valid test credentials:
 - **AUTH-02**: Failed login
 - **AUTH-04**: Admin access control
 - **AUTH-05**: Logout
-- **Badge Application**: Full lifecycle
-- **Admin Review**: Accept/reject applications
-- **Promotions**: Creation and validation
+- **BA-01**: Create and save draft application
+- **BA-02**: Edit and submit draft application
+- **BA-05**: Prevent editing non-draft applications
+- **BA-03**: Admin accepts application (requires admin user)
+- **BA-04**: Admin rejects application (requires admin user)
+- **BA-06**: Badge availability for promotions (requires test data)
 
 ## Test Structure
 
 ```
 e2e/
 ├── Authentication.spec.ts      # Auth flow tests (AUTH-01 to AUTH-05)
-├── LoginPage.spec.ts           # Login page UI tests
-├── pages/                      # Page Object Models
-│   └── LoginPage.ts
-├── helpers/                    # Test helpers
-│   └── auth.ts                # Login/logout helpers
-├── test-config.ts             # Test configuration
-├── SETUP.md                   # This file
-└── README.md                  # General E2E docs
+├── LoginPage.spec.ts          # Login page UI tests
+├── BadgeApplication.spec.ts   # Badge application tests (BA-01 to BA-06)
+├── pages/                     # Page Object Models
+│   ├── LoginPage.ts          # Login page POM
+│   ├── CatalogPage.ts        # Badge catalog POM
+│   ├── ApplicationPage.ts    # Application editor/detail POM
+│   └── ApplicationsListPage.ts # Applications list POM
+├── helpers/                   # Test helpers
+│   └── auth.ts               # Login/logout helpers
+├── test-config.ts            # Test configuration
+├── SETUP.md                  # This file
+└── README.md                 # General E2E docs
 ```
 
 ## Troubleshooting

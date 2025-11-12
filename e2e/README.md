@@ -21,15 +21,19 @@ pnpm test:e2e --grep "Authentication"
 
 ```
 e2e/
-├── Authentication.spec.ts  # Auth flow tests (AUTH-01 to AUTH-05)
-├── LoginPage.spec.ts      # Login page UI tests
-├── pages/                 # Page Object Models
-│   └── LoginPage.ts      # Login page POM
-├── helpers/               # Test helpers
-│   └── auth.ts           # Login/logout utilities
-├── test-config.ts        # Test configuration & credentials
-├── SETUP.md              # Setup guide for test users
-└── README.md             # This file
+├── Authentication.spec.ts      # Auth flow tests (AUTH-01 to AUTH-05)
+├── LoginPage.spec.ts          # Login page UI tests
+├── BadgeApplication.spec.ts   # Badge application tests (BA-01 to BA-06)
+├── pages/                     # Page Object Models
+│   ├── LoginPage.ts          # Login page POM
+│   ├── CatalogPage.ts        # Badge catalog POM
+│   ├── ApplicationPage.ts    # Badge application editor/detail POM
+│   └── ApplicationsListPage.ts # Applications list POM
+├── helpers/                   # Test helpers
+│   └── auth.ts               # Login/logout utilities
+├── test-config.ts            # Test configuration & credentials
+├── SETUP.md                  # Setup guide for test users
+└── README.md                 # This file
 ```
 
 ## Page Object Model (POM)
