@@ -15,6 +15,10 @@ AI – Communication with models via the Openrouter.ai service:
 -Provides access to a wide range of models (OpenAI, Anthropic, Google, and many others), allowing us to find a solution that ensures high efficiency and low cost.
 -Allows setting financial limits for API keys.
 
+Testing:
+-Vitest for unit and component testing with React Testing Library for component tests.
+-Playwright for end-to-end (E2E) testing, simulating real user interactions and workflows.
+
 CI/CD and Hosting:
 -GitHub Actions for building CI/CD pipelines.
 -DigitalOcean for hosting the application via a Docker image.

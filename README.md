@@ -22,6 +22,7 @@ See the full Product Requirements Document at `/.ai/prd.md`.
 ## Tech stack
 - **Frontend:** Astro 5, React 19, TypeScript 5, Tailwind CSS 4, shadcn/ui
 - **Backend:** Supabase (Postgres, auth, SDKs)
+- **Testing:** Vitest (unit/component tests), Playwright (E2E tests)
 - **AI (optional):** Openrouter.ai
 - **CI/CD & Hosting:** GitHub Actions, DigitalOcean (Docker)
 - **Tooling:** pnpm, ESLint, Prettier, Husky, lint-staged
@@ -64,6 +65,8 @@ Defined in `package.json`:
 - `pnpm lint` — Run ESLint across the repo
 - `pnpm lint:fix` — Run ESLint with `--fix`
 - `pnpm format` — Run Prettier to format files
+- `pnpm test` — Run unit and component tests with Vitest
+- `pnpm test:e2e` — Run end-to-end tests with Playwright
 
 ## Project scope
 ### In-scope (MVP core features)
