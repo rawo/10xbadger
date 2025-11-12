@@ -49,24 +49,45 @@ Key package versions (from `package.json`): `astro` ^5.14.5, `react` ^19.2.0, `t
      - `SUPABASE_URL`
      - `SUPABASE_ANON_KEY` (or service role key)
      - OIDC / Google SSO client id / secret
-4. Run the dev server:
+4. Install Playwright browsers (for E2E tests):
+   - `pnpm exec playwright install chromium`
+5. Run the dev server:
    - `pnpm dev`
-5. Build for production:
+6. Build for production:
    - `pnpm build`
-6. Preview the production build locally:
+7. Preview the production build locally:
    - `pnpm preview`
 
 ## Available scripts
 Defined in `package.json`:
+
+### Development
 - `pnpm dev` — Run the local development server (Astro)
 - `pnpm build` — Build the production site
 - `pnpm preview` — Preview the production build locally
 - `pnpm astro` — Run the local Astro CLI
+
+### Code Quality
 - `pnpm lint` — Run ESLint across the repo
 - `pnpm lint:fix` — Run ESLint with `--fix`
 - `pnpm format` — Run Prettier to format files
-- `pnpm test` — Run unit and component tests with Vitest
-- `pnpm test:e2e` — Run end-to-end tests with Playwright
+
+### Testing
+**Unit & Component Tests (Vitest)**
+- `pnpm test` — Run unit and component tests
+- `pnpm test:watch` — Run tests in watch mode (for active development)
+- `pnpm test:ui` — Open Vitest UI for visual test management
+- `pnpm test:coverage` — Run tests with coverage report
+
+**End-to-End Tests (Playwright)**
+- `pnpm test:e2e` — Run E2E tests
+- `pnpm test:e2e:ui` — Run E2E tests with Playwright UI (interactive mode)
+- `pnpm test:e2e:debug` — Debug E2E tests with step-by-step inspector
+- `pnpm test:e2e:codegen` — Generate E2E tests by recording browser interactions
+- `pnpm test:e2e:report` — View the last E2E test report in browser
+
+**All Tests**
+- `pnpm test:all` — Run all tests (unit, component, and E2E)
 
 ## Project scope
 ### In-scope (MVP core features)
