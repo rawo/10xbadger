@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import { useAdminReview } from "../useAdminReview";
 import type { PaginatedResponse, BadgeApplicationListItemDto, AdminReviewMetrics } from "@/types";
 
@@ -108,7 +108,7 @@ describe("useAdminReview", () => {
   });
 
   describe("Filter Updates", () => {
-    it("should update filters and reset offset to 0", () => {
+    it("should update filters and reset offset to 0", async () => {
       const { result } = renderHook(() =>
         useAdminReview({
           initialData: mockInitialData,
@@ -117,10 +117,14 @@ describe("useAdminReview", () => {
         })
       );
 
-      result.current.updateFilters({ status: "accepted" });
+      act(() => {
+        result.current.updateFilters({ status: "accepted" });
+      });
 
-      expect(result.current.filters.status).toBe("accepted");
-      expect(result.current.filters.offset).toBe(0);
+      await waitFor(() => {
+        expect(result.current.filters.status).toBe("accepted");
+        expect(result.current.filters.offset).toBe(0);
+      });
     });
 
     it("should reset filters to defaults", () => {
@@ -160,7 +164,7 @@ describe("useAdminReview", () => {
   });
 
   describe("Pagination", () => {
-    it("should change page offset", () => {
+    it("should change page offset", async () => {
       const { result } = renderHook(() =>
         useAdminReview({
           initialData: mockInitialData,
@@ -169,12 +173,16 @@ describe("useAdminReview", () => {
         })
       );
 
-      result.current.goToPage(20);
+      act(() => {
+        result.current.goToPage(20);
+      });
 
-      expect(result.current.filters.offset).toBe(20);
+      await waitFor(() => {
+        expect(result.current.filters.offset).toBe(20);
+      });
     });
 
-    it("should change page size and reset offset", () => {
+    it("should change page size and reset offset", async () => {
       const { result } = renderHook(() =>
         useAdminReview({
           initialData: mockInitialData,
@@ -183,10 +191,14 @@ describe("useAdminReview", () => {
         })
       );
 
-      result.current.changePageSize(50);
+      act(() => {
+        result.current.changePageSize(50);
+      });
 
-      expect(result.current.filters.limit).toBe(50);
-      expect(result.current.filters.offset).toBe(0);
+      await waitFor(() => {
+        expect(result.current.filters.limit).toBe(50);
+        expect(result.current.filters.offset).toBe(0);
+      });
     });
   });
 
@@ -255,7 +267,11 @@ describe("useAdminReview", () => {
       );
 
       await expect(result.current.acceptApplication("app-1")).rejects.toThrow();
-      expect(result.current.error).toBeTruthy();
+
+      // Wait for error state to be set
+      await waitFor(() => {
+        expect(result.current.error).toBeTruthy();
+      });
     });
   });
 

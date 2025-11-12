@@ -30,11 +30,23 @@ describe("PageHeader", () => {
   it("should render all metric cards", () => {
     render(<PageHeader title="Test Title" metrics={mockMetrics} />);
 
+    // Check card labels exist
     expect(screen.getByText("Pending Review")).toBeInTheDocument();
-    expect(screen.getByText("5")).toBeInTheDocument();
-
     expect(screen.getByText("Accepted (All Time)")).toBeInTheDocument();
     expect(screen.getByText("Rejected (All Time)")).toBeInTheDocument();
+
+    // Check metric values using more specific queries
+    // Pending count should be 5
+    const pendingCard = screen.getByText("Pending Review").closest(".card, [class*='card'], div");
+    expect(pendingCard).toHaveTextContent("5");
+
+    // Accepted count is calculated as Math.floor(totalReviewedCount * 0.7) = Math.floor(8 * 0.7) = 5
+    const acceptedCard = screen.getByText("Accepted (All Time)").closest(".card, [class*='card'], div");
+    expect(acceptedCard).toHaveTextContent("5");
+
+    // Rejected count is calculated as Math.ceil(totalReviewedCount * 0.3) = Math.ceil(8 * 0.3) = 3
+    const rejectedCard = screen.getByText("Rejected (All Time)").closest(".card, [class*='card'], div");
+    expect(rejectedCard).toHaveTextContent("3");
   });
 
   it("should show warning when pending count is high", () => {
@@ -76,6 +88,12 @@ describe("PageHeader", () => {
 
     render(<PageHeader title="Test Title" metrics={zeroMetrics} />);
 
-    expect(screen.getByText("0")).toBeInTheDocument();
+    // Verify all metric cards show 0
+    const allZeros = screen.getAllByText("0");
+    expect(allZeros.length).toBeGreaterThan(0);
+
+    // Or verify specific cards
+    const pendingCard = screen.getByText("Pending Review").closest(".card, [class*='card'], div");
+    expect(pendingCard).toHaveTextContent("0");
   });
 });

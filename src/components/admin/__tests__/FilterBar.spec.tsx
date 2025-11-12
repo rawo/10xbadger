@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { FilterBar } from "../FilterBar";
 import type { AdminReviewFilters } from "@/types";
 
@@ -47,17 +48,21 @@ describe("FilterBar", () => {
     expect(screen.getByText(/applications/)).toBeInTheDocument();
   });
 
-  it("should call onFilterChange when status tab is clicked", () => {
+  it("should call onFilterChange when status tab is clicked", async () => {
+    const user = userEvent.setup();
+
     render(
       <FilterBar filters={mockFilters} onFilterChange={mockOnFilterChange} resultCount={10} hasActiveFilters={false} />
     );
 
-    const acceptedTab = screen.getByText("Accepted");
-    fireEvent.click(acceptedTab);
+    const acceptedTab = screen.getByRole("tab", { name: /accepted/i }) || screen.getByText("Accepted");
+    await user.click(acceptedTab);
 
-    expect(mockOnFilterChange).toHaveBeenCalledWith({
-      status: "accepted",
-      offset: 0,
+    await waitFor(() => {
+      expect(mockOnFilterChange).toHaveBeenCalledWith({
+        status: "accepted",
+        offset: 0,
+      });
     });
   });
 
