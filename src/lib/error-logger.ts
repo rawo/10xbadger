@@ -30,11 +30,7 @@ export async function logError(
  * TODO: Implement proper logging infrastructure (database/external service)
  */
 
-export function logAuthFailure(
-  userId: string | null,
-  message: string,
-  metadata?: Record<string, unknown>
-): void {
+export function logAuthFailure(userId: string | null, message: string, metadata?: Record<string, unknown>): void {
   // Stub implementation - logs to console for now
   // eslint-disable-next-line no-console
   console.error("[AUTH_FAILURE]", {
@@ -45,11 +41,7 @@ export function logAuthFailure(
   });
 }
 
-export function logAuthSuccess(
-  userId: string,
-  method: string,
-  metadata?: Record<string, unknown>
-): void {
+export function logAuthSuccess(userId: string, method: string, metadata?: Record<string, unknown>): void {
   // Stub implementation - logs to console for now
   // eslint-disable-next-line no-console
   console.log("[AUTH_SUCCESS]", {

@@ -1,9 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { PromotionTemplateDetailDto } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight } from "lucide-react";
 import type { TemplateOverviewCardProps } from "@/types";
 
+type TemplateWithTimestamps = PromotionTemplateDetailDto & {
+  created_at?: string;
+  updated_at?: string;
+  deactivated_at?: string;
+};
+
 export function TemplateOverviewCard({ template }: TemplateOverviewCardProps) {
+  const templateWithTimestamps = template as TemplateWithTimestamps;
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return null;
     try {
@@ -65,21 +73,23 @@ export function TemplateOverviewCard({ template }: TemplateOverviewCardProps) {
 
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium text-muted-foreground">Created</span>
-          <span className="text-base font-medium text-foreground">{formatDate((template as any).created_at)}</span>
+          <span className="text-base font-medium text-foreground">{formatDate(templateWithTimestamps.created_at)}</span>
         </div>
 
-        {(template as any).updated_at && (
+        {templateWithTimestamps.updated_at && (
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-muted-foreground">Last Updated</span>
-            <span className="text-base font-medium text-foreground">{formatDate((template as any).updated_at)}</span>
+            <span className="text-base font-medium text-foreground">
+              {formatDate(templateWithTimestamps.updated_at)}
+            </span>
           </div>
         )}
 
-        {(template as any).deactivated_at && (
+        {templateWithTimestamps.deactivated_at && (
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-muted-foreground">Deactivated</span>
             <span className="text-base font-medium text-destructive">
-              {formatDate((template as any).deactivated_at)}
+              {formatDate(templateWithTimestamps.deactivated_at)}
             </span>
           </div>
         )}

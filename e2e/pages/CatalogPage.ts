@@ -114,7 +114,7 @@ export class CatalogPage {
   async getFirstBadgeTitle(): Promise<string> {
     const firstBadge = await this.getFirstBadge();
     const titleLocator = firstBadge.locator("h2, h3, [data-testid='badge-title']").first();
-    return await titleLocator.textContent() || "";
+    return (await titleLocator.textContent()) || "";
   }
 
   /**

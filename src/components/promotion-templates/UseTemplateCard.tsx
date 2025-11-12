@@ -4,8 +4,6 @@ import { Rocket, AlertTriangle, Loader2 } from "lucide-react";
 import type { UseTemplateCardProps } from "@/types";
 
 export function UseTemplateCard({
-  templateId,
-  templateName,
   templatePath,
   fromLevel,
   toLevel,
@@ -47,7 +45,7 @@ export function UseTemplateCard({
         )}
 
         <p className="text-xs text-muted-foreground">
-          You'll be able to select specific badges and review before submitting.
+          You&apos;ll be able to select specific badges and review before submitting.
         </p>
       </CardContent>
       <CardFooter>

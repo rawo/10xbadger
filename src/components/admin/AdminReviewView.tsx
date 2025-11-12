@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import type { AdminReviewViewProps, BadgeApplicationListItemDto } from "@/types";
+import type { AdminReviewViewProps, BadgeApplicationListItemDto, BadgeApplicationStatusType } from "@/types";
 import { useAdminReview } from "@/hooks/useAdminReview";
 import { PageHeader } from "./PageHeader";
 import { FilterBar } from "./FilterBar";
@@ -30,10 +30,8 @@ export function AdminReviewView(props: AdminReviewViewProps) {
     filters,
     isLoading,
     isProcessing,
-    processingId,
     error,
     updateFilters,
-    resetFilters,
     goToPage,
     acceptApplication,
     rejectApplication,
@@ -122,7 +120,7 @@ export function AdminReviewView(props: AdminReviewViewProps) {
 
   const handleMetricClick = useCallback(
     (status: string) => {
-      updateFilters({ status: status as any, offset: 0 });
+      updateFilters({ status: status as BadgeApplicationStatusType, offset: 0 });
     },
     [updateFilters]
   );

@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { PromotionValidationResponse, EligibilityPreviewProps } from "@/types";
+import type { EligibilityPreviewProps } from "@/types";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
 export function EligibilityPreview({ validationResult, isLoading }: EligibilityPreviewProps) {

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { TemplateDetailViewProps, PromotionTemplateDetailDto, TemplateFormData, ApiError } from "@/types";
+import type {
+  TemplateDetailViewProps,
+  PromotionTemplateDetailDto,
+  TemplateFormData,
+  ApiError,
+  PromotionPathType,
+} from "@/types";
 import { TemplateDetailHeader } from "./TemplateDetailHeader";
 import { TemplateOverviewCard } from "./TemplateOverviewCard";
 import { TemplateRulesDetailCard } from "./TemplateRulesDetailCard";
@@ -50,16 +56,17 @@ export function TemplateDetailView(props: TemplateDetailViewProps) {
         if (!response.ok) {
           const errorData: ApiError = await response
             .json()
-            .catch(() => ({ message: "Failed to update template" }) as any);
+            .catch(() => ({ message: "Failed to update template" }) as ApiError);
           if (response.status === 404) {
             toast.error("Template not found. It may have been deleted.");
             setIsEditModalOpen(false);
             return;
           }
           if (response.status === 400 && errorData.details) {
-            const err = new Error(errorData.message || "Validation failed");
-            (err as any).details = errorData.details;
-            (err as any).status = 400;
+            const err = new Error(errorData.message || "Validation failed") as Error & {
+              status?: number;
+            };
+            err.status = 400;
             throw err;
           }
           throw new Error(errorData.message || "Failed to update template");
@@ -89,7 +96,7 @@ export function TemplateDetailView(props: TemplateDetailViewProps) {
       if (!response.ok) {
         const errorData: ApiError = await response
           .json()
-          .catch(() => ({ message: "Failed to deactivate template" }) as any);
+          .catch(() => ({ message: "Failed to deactivate template" }) as ApiError);
         if (response.status === 404) {
           toast.error("Template not found. It may have been deleted.");
           setIsDeactivateModalOpen(false);
@@ -154,7 +161,7 @@ export function TemplateDetailView(props: TemplateDetailViewProps) {
           <UseTemplateCard
             templateId={template.id}
             templateName={template.name}
-            templatePath={template.path as any}
+            templatePath={template.path as PromotionPathType}
             fromLevel={template.from_level}
             toLevel={template.to_level}
             rulesCount={template.rules.length}
@@ -195,7 +202,7 @@ function focusFirstInDialog() {
     if (focusable) {
       focusable.focus();
     }
-  } catch (err) {
+  } catch {
     // swallow
   }
 }

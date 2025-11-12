@@ -60,7 +60,6 @@ export async function POST(context: APIContext): Promise<Response> {
     // during login flow (circular dependency with is_admin() function)
     const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
-      console.error("[Login] SUPABASE_SERVICE_ROLE_KEY not configured");
       await supabase.auth.signOut();
       return context.redirect("/login?error=server_error");
     }
@@ -70,22 +69,14 @@ export async function POST(context: APIContext): Promise<Response> {
     const adminClient = createClient(import.meta.env.SUPABASE_URL, serviceRoleKey);
 
     // Fetch user record (bypassing RLS)
-    let { data: userData, error: userError } = await adminClient
+    const { data: userData, error: userError } = await adminClient
       .from("users")
       .select("*")
       .eq("id", data.user.id)
       .single();
 
-    // Debug logging to see what's happening
-    console.log("[Login Debug] User fetch result:", {
-      userId: data.user.id,
-      hasUserData: !!userData,
-      errorCode: userError?.code,
-      errorMessage: userError?.message,
-    });
-
     // Check if user record doesn't exist (PGRST116 is "not found" error)
-    const userNotFound = userError?.code === 'PGRST116' || (!userData && !userError);
+    const userNotFound = userError?.code === "PGRST116" || (!userData && !userError);
 
     if (userNotFound) {
       // User not in database yet, create record
@@ -96,8 +87,8 @@ export async function POST(context: APIContext): Promise<Response> {
         .from("users")
         .insert({
           id: data.user.id,
-          email: data.user.email!,
-          display_name: data.user.email!.split("@")[0],
+          email: data.user.email || "",
+          display_name: (data.user.email || "").split("@")[0],
           is_admin: isAdmin,
           last_seen_at: new Date().toISOString(),
         })

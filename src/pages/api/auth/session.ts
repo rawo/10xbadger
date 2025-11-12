@@ -13,9 +13,7 @@
 
 export const prerender = false;
 
-import type { APIContext } from "astro";
-
-export async function GET(_context: APIContext): Promise<Response> {
+export async function GET(): Promise<Response> {
   // TODO: Implement actual session checking
   // For now, return null (not authenticated)
   return new Response(

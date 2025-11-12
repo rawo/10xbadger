@@ -31,8 +31,8 @@ export async function login(page: Page, email: string, password: string): Promis
   await page.waitForLoadState("networkidle");
 
   // Fill in credentials
-  await page.locator('input#email').fill(email);
-  await page.locator('input#password').fill(password);
+  await page.locator("input#email").fill(email);
+  await page.locator("input#password").fill(password);
 
   // Submit form
   await page.locator('button[type="submit"]').click();
@@ -73,12 +73,8 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
  * Setup authenticated session using browser context storage
  * This can be faster than logging in via UI for every test
  */
-export async function setupAuthenticatedSession(
-  page: Page,
-  userType: "user" | "admin" = "user"
-): Promise<void> {
-  const credentials =
-    userType === "admin" ? TEST_USERS.admin : TEST_USERS.standardUser;
+export async function setupAuthenticatedSession(page: Page, userType: "user" | "admin" = "user"): Promise<void> {
+  const credentials = userType === "admin" ? TEST_USERS.admin : TEST_USERS.standardUser;
 
   await login(page, credentials.email, credentials.password);
 }

@@ -10,7 +10,7 @@ import type { ReviewListProps } from "@/types";
  * TODO: Implement in next iteration
  */
 export function ReviewList(props: ReviewListProps) {
-  const { applications, isLoading, onAccept, onReject, onView } = props;
+  const { applications, isLoading } = props;
 
   if (isLoading) {
     return (

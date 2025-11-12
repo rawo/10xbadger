@@ -4,9 +4,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { TemplateFormModal } from "../TemplateFormModal";
 
+import type { PromotionTemplateDetailDto, ValidationErrorDetails } from "@/types";
+
 describe("TemplateFormModal integration", () => {
   it("displays server-side validation errors returned from onSubmit", async () => {
-    const template = {
+    const template: PromotionTemplateDetailDto = {
       id: "t1",
       name: "Existing Template",
       path: "technical",
@@ -14,12 +16,12 @@ describe("TemplateFormModal integration", () => {
       to_level: "J2",
       rules: [{ category: "technical", level: "gold", count: 1 }],
       is_active: true,
-    } as any;
+    } as PromotionTemplateDetailDto;
 
     const onClose = vi.fn();
 
     const onSubmit = vi.fn().mockImplementation(async () => {
-      const err: any = new Error("Validation failed");
+      const err: Error & { details?: ValidationErrorDetails[] } = new Error("Validation failed");
       err.details = [{ field: "name", message: "Name is required" }];
       throw err;
     });

@@ -201,9 +201,9 @@ export function TemplateFormModal({ isOpen, mode, template, onClose, onSubmit }:
       onClose();
     } catch (err) {
       // Handle server-side validation errors attached by parent handler
-      const errorDetails = (err as any)?.details;
-      if (Array.isArray(errorDetails)) {
-        const serverErrors = mapApiValidationDetails(errorDetails);
+      const error = err as Error & { details?: ValidationErrorDetails[] };
+      if (Array.isArray(error.details)) {
+        const serverErrors = mapApiValidationDetails(error.details);
         setErrors(serverErrors);
         toast.error("Please fix validation errors");
         return;

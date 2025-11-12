@@ -22,16 +22,21 @@ let user = propsUser;
 if (!user) {
   try {
     user = await getAuthenticatedUser(Astro);
-  } catch (error) {
+  } catch {
     // Silent fail - user is not authenticated
-    console.debug("[Layout] User not authenticated:", error);
   }
 }
 
 // Check if current page is login, logout, or unauthorized
-const isAuthPage = ["/login", "/logout", "/unauthorized", "/register", "/forgot-password", "/reset-password", "/verify-email"].some((path) => 
-  Astro.url.pathname.startsWith(path)
-);
+const isAuthPage = [
+  "/login",
+  "/logout",
+  "/unauthorized",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+].some((path) => Astro.url.pathname.startsWith(path));
 
 // Track authentication state for client-side components
 const isAuthenticated = user !== null;
@@ -45,13 +50,6 @@ const isAuthenticated = user !== null;
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    
-    <!-- Pass authentication state to client-side -->
-    <script is:inline define:vars={{ isAuthenticated }}>
-      window.__AUTH_STATE__ = {
-        isAuthenticated: isAuthenticated,
-      };
-    </script>
   </head>
   <body data-authenticated={isAuthenticated}>
     <!-- Navigation Header (hidden on auth pages) -->

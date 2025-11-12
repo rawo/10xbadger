@@ -1,5 +1,5 @@
 import React from "react";
-import type { AdminFilterBarProps } from "@/types";
+import type { AdminFilterBarProps, BadgeApplicationStatusType, BadgeApplicationSortBy } from "@/types";
 import { BadgeApplicationStatus } from "@/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export function FilterBar(props: AdminFilterBarProps) {
     if (value === "all") {
       onFilterChange({ status: undefined, offset: 0 });
     } else {
-      onFilterChange({ status: value as any, offset: 0 });
+      onFilterChange({ status: value as BadgeApplicationStatusType, offset: 0 });
     }
   };
 
@@ -31,7 +31,7 @@ export function FilterBar(props: AdminFilterBarProps) {
   // =========================================================================
 
   const handleSortChange = (value: string) => {
-    onFilterChange({ sort: value as any, offset: 0 });
+    onFilterChange({ sort: value as BadgeApplicationSortBy, offset: 0 });
   };
 
   const handleOrderToggle = () => {

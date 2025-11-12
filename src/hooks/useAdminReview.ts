@@ -79,7 +79,7 @@ const DEFAULT_FILTERS: AdminReviewFilters = {
  * @returns Hook interface with state and actions
  */
 export function useAdminReview(props: UseAdminReviewProps): UseAdminReviewReturn {
-  const { initialData, initialMetrics, adminUserId } = props;
+  const { initialData, initialMetrics } = props;
 
   // =========================================================================
   // State Variables
@@ -113,7 +113,17 @@ export function useAdminReview(props: UseAdminReviewProps): UseAdminReviewReturn
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
+  /**
+   * Updates filters and resets to first page (unless offset is explicitly provided)
+   */
+  const updateFilters = useCallback((newFilters: Partial<AdminReviewFilters>) => {
+    setFilters((prev) => ({
+      ...prev,
+      ...newFilters,
+      // Reset to first page when filters change (unless offset is explicitly provided)
+      offset: newFilters.offset !== undefined ? newFilters.offset : 0,
+    }));
+  }, []);
   // =========================================================================
   // URL Synchronization
   // =========================================================================
@@ -219,9 +229,8 @@ export function useAdminReview(props: UseAdminReviewProps): UseAdminReviewReturn
           totalReviewedCount: (accepted.pagination.total || 0) + (rejected.pagination.total || 0),
         });
       }
-    } catch (err) {
+    } catch {
       // Silently fail metrics refresh - not critical
-      console.error("Failed to refresh metrics:", err);
     }
   }, []);
 
@@ -290,7 +299,7 @@ export function useAdminReview(props: UseAdminReviewProps): UseAdminReviewReturn
         setProcessingId(null);
       }
     },
-    [applications.length, filters.offset, filters.limit, refetch, refreshMetrics]
+    [applications.length, filters.offset, filters.limit, refetch, refreshMetrics, updateFilters]
   );
 
   /**
@@ -358,24 +367,12 @@ export function useAdminReview(props: UseAdminReviewProps): UseAdminReviewReturn
         setProcessingId(null);
       }
     },
-    [applications.length, filters.offset, filters.limit, refetch, refreshMetrics]
+    [applications.length, filters.offset, filters.limit, refetch, refreshMetrics, updateFilters]
   );
 
   // =========================================================================
   // Filter and Pagination Actions
   // =========================================================================
-
-  /**
-   * Updates filters and resets to first page (unless offset is explicitly provided)
-   */
-  const updateFilters = useCallback((newFilters: Partial<AdminReviewFilters>) => {
-    setFilters((prev) => ({
-      ...prev,
-      ...newFilters,
-      // Reset to first page when filters change (unless offset is explicitly provided)
-      offset: newFilters.offset !== undefined ? newFilters.offset : 0,
-    }));
-  }, []);
 
   /**
    * Resets filters to defaults

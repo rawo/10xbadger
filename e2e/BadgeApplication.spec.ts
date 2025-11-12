@@ -80,7 +80,7 @@ test.describe("Badge Application Lifecycle", () => {
       await page.waitForTimeout(TEST_TIMEOUTS.formSubmission);
 
       // Should have an application ID in URL or be redirected
-      const applicationId = applicationPage.getIdFromUrl();
+      // const applicationId = applicationPage.getIdFromUrl();
 
       // Verify we can navigate to applications list and see the draft
       await listPage.goto();
@@ -231,13 +231,13 @@ test.describe("Badge Application Lifecycle", () => {
   });
 
   test.describe("BA-03 & BA-04: Admin Review (Accept/Reject)", () => {
-    test.skip("BA-03: admin should accept a submitted application", async ({ page }) => {
+    test.skip("BA-03: admin should accept a submitted application", async () => {
       // This test requires admin user - see e2e/SETUP.md
       // TODO: Implement after admin user is set up
       test.skip();
     });
 
-    test.skip("BA-04: admin should reject a submitted application with reason", async ({ page }) => {
+    test.skip("BA-04: admin should reject a submitted application with reason", async () => {
       // This test requires admin user - see e2e/SETUP.md
       // TODO: Implement after admin user is set up
       test.skip();
@@ -245,7 +245,7 @@ test.describe("Badge Application Lifecycle", () => {
   });
 
   test.describe("BA-06: Badge Availability for Promotions", () => {
-    test.skip("should only show accepted badges in promotion builder", async ({ page }) => {
+    test.skip("should only show accepted badges in promotion builder", async () => {
       // This test requires:
       // 1. User with accepted badges
       // 2. Access to promotion builder

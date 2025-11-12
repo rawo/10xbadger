@@ -88,4 +88,3 @@ export async function POST(context: APIContext): Promise<Response> {
     return context.redirect("/register?error=server_error");
   }
 }
-

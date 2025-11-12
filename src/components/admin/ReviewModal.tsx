@@ -33,7 +33,7 @@ export function ReviewModal(props: ReviewModalProps) {
     try {
       await onConfirm(application.id, decisionNote || undefined);
       setDecisionNote(""); // Reset on success
-    } catch (err) {
+    } catch {
       // Error is handled by parent component
     }
   };

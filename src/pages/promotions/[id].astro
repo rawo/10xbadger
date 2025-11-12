@@ -129,8 +129,7 @@ try {
   } else {
     promotion = await response.json();
   }
-} catch (err) {
-  console.error("Error fetching promotion:", err);
+} catch {
   error = "An unexpected error occurred while loading the promotion";
 }
 

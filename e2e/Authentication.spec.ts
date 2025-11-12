@@ -27,19 +27,14 @@ test.describe("Authentication Flow", () => {
   let loginPage: LoginPage;
 
   test.describe("AUTH-01: Successful Login", () => {
-    test("should log in with valid credentials and redirect to dashboard", async ({
-      page,
-    }) => {
+    test("should log in with valid credentials and redirect to dashboard", async ({ page }) => {
       loginPage = new LoginPage(page);
 
       // Navigate to login page
       await loginPage.goto();
 
       // Login with valid credentials
-      await loginPage.login(
-        TEST_USERS.standardUser.email,
-        TEST_USERS.standardUser.password
-      );
+      await loginPage.login(TEST_USERS.standardUser.email, TEST_USERS.standardUser.password);
 
       // Should redirect to dashboard
       await page.waitForURL("/", { timeout: TEST_TIMEOUTS.navigation });
@@ -53,18 +48,13 @@ test.describe("Authentication Flow", () => {
   });
 
   test.describe("AUTH-02: Failed Login", () => {
-    test("should show error message with incorrect password", async ({
-      page,
-    }) => {
+    test("should show error message with incorrect password", async ({ page }) => {
       loginPage = new LoginPage(page);
 
       await loginPage.goto();
 
       // Attempt login with wrong password
-      await loginPage.login(
-        TEST_USERS.standardUser.email,
-        "WrongPassword123!"
-      );
+      await loginPage.login(TEST_USERS.standardUser.email, "WrongPassword123!");
 
       // Should redirect back to login with error parameter
       await page.waitForURL(/\/login\?error=/, {
@@ -77,9 +67,7 @@ test.describe("Authentication Flow", () => {
       });
     });
 
-    test("should show error message with non-existent user", async ({
-      page,
-    }) => {
+    test("should show error message with non-existent user", async ({ page }) => {
       loginPage = new LoginPage(page);
 
       await loginPage.goto();
@@ -100,9 +88,7 @@ test.describe("Authentication Flow", () => {
   });
 
   test.describe("AUTH-03: Protected Routes", () => {
-    test("should redirect to login when accessing protected page without authentication", async ({
-      page,
-    }) => {
+    test("should redirect to login when accessing protected page without authentication", async ({ page }) => {
       // Try to access dashboard without being logged in
       await page.goto("/");
 
@@ -114,9 +100,7 @@ test.describe("Authentication Flow", () => {
       await expect(page.locator("h1:has-text('10xbadger')")).toBeVisible();
     });
 
-    test("should redirect to login when accessing applications page without authentication", async ({
-      page,
-    }) => {
+    test("should redirect to login when accessing applications page without authentication", async ({ page }) => {
       // Try to access applications page without being logged in
       await page.goto("/applications");
 
@@ -125,9 +109,7 @@ test.describe("Authentication Flow", () => {
       expect(page.url()).toContain("/login");
     });
 
-    test("should redirect to login when accessing catalog without authentication", async ({
-      page,
-    }) => {
+    test("should redirect to login when accessing catalog without authentication", async ({ page }) => {
       // Try to access catalog page without being logged in
       await page.goto("/catalog");
 
@@ -138,9 +120,7 @@ test.describe("Authentication Flow", () => {
   });
 
   test.describe("AUTH-04: Admin Access Control", () => {
-    test("should deny access to admin panel for regular user", async ({
-      page,
-    }) => {
+    test("should deny access to admin panel for regular user", async ({ page }) => {
       // Login as regular user
       await login(page, TEST_USERS.standardUser.email, TEST_USERS.standardUser.password);
 
@@ -160,9 +140,7 @@ test.describe("Authentication Flow", () => {
       expect(isUnauthorized).toBeTruthy();
     });
 
-    test("should allow access to admin panel for admin user", async ({
-      page,
-    }) => {
+    test("should allow access to admin panel for admin user", async ({ page }) => {
       // Skip this test if admin user is not set up
       // Remove .skip once admin user is configured
 
@@ -177,16 +155,12 @@ test.describe("Authentication Flow", () => {
       expect(page.url()).toContain("/admin/review");
 
       // Should see admin interface
-      await expect(
-        page.locator("h1:has-text('Review')")
-      ).toBeVisible();
+      await expect(page.locator("h1:has-text('Review')")).toBeVisible();
     });
   });
 
   test.describe("AUTH-05: Logout", () => {
-    test("should logout successfully and redirect to login page", async ({
-      page,
-    }) => {
+    test("should logout successfully and redirect to login page", async ({ page }) => {
       // First, login
       await login(page, TEST_USERS.standardUser.email, TEST_USERS.standardUser.password);
 

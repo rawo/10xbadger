@@ -47,7 +47,7 @@ export function AdminActionModal({ isOpen, onClose, promotion, action, onConfirm
     try {
       await onConfirm(action, action === "reject" ? reason : undefined);
       handleClose();
-    } catch (err) {
+    } catch {
       // Error handling is done in parent component
       setIsSubmitting(false);
     }

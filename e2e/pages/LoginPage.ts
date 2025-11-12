@@ -27,8 +27,8 @@ export class LoginPage {
     this.page = page;
 
     // Locators for form elements
-    this.emailInput = page.locator('input#email');
-    this.passwordInput = page.locator('input#password');
+    this.emailInput = page.locator("input#email");
+    this.passwordInput = page.locator("input#password");
     this.submitButton = page.locator('button[type="submit"]');
     this.showPasswordButton = page.locator('button[aria-label*="password"]');
 
@@ -38,7 +38,7 @@ export class LoginPage {
 
     // Locators for page content
     this.appTitle = page.locator('h1:has-text("10xbadger")');
-    this.cardTitle = page.locator('text=Welcome Back');
+    this.cardTitle = page.locator("text=Welcome Back");
     this.validationError = page.locator('[role="alert"]');
   }
 

@@ -18,7 +18,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   PromotionDetailDto,
   BadgeApplicationWithBadge,
-  PromotionTemplateRule,
   PromotionValidationResponse,
   PromotionBuilderViewProps,
   ReservationConflictError,
@@ -93,7 +92,7 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
         }
         const data: PromotionValidationResponse = await res.json();
         if (mounted) setValidationResult(data);
-      } catch (error) {
+      } catch {
         if (mounted) setValidationResult(null);
       } finally {
         if (mounted) setIsValidating(false);
@@ -315,8 +314,6 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
     );
   }
 
-  const templateRules = useMemo<PromotionTemplateRule[] | undefined>(() => promotion?.template?.rules, [promotion]);
-
   // =========================================================================
   // Render: Main View
   // =========================================================================
@@ -464,7 +461,12 @@ export function PromotionBuilderView({ initialPromotion, userId, isAdmin }: Prom
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => handleConflictNavigate(conflictModal.error!.owning_promotion_id)}
+                onClick={() => {
+                  if (conflictModal.error?.owning_promotion_id) {
+                    handleConflictNavigate(conflictModal.error.owning_promotion_id);
+                  }
+                }}
+                disabled={!conflictModal.error?.owning_promotion_id}
               >
                 View Owning Promotion
               </Button>

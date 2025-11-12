@@ -15,7 +15,7 @@ import type { DashboardViewModel, PaginatedResponse, BadgeApplicationListItemDto
 // Require authentication - redirects to login if not authenticated
 const user = await requireAuth(Astro);
 if (user instanceof Response) {
- return user;
+  return user;
 }
 const userId = user.id;
 

@@ -10,8 +10,6 @@
  * - Administrators: All standard user capabilities + CRUD operations
  */
 
-console.log("[CATALOG] Page executing - checking auth...");
-
 import Layout from "@/layouts/Layout.astro";
 import { CatalogBadgesView } from "@/components/catalog-badges/CatalogBadgesView";
 import { requireAuth } from "@/lib/auth/server-auth";
@@ -57,15 +55,11 @@ try {
   if (!response.ok) {
     const errorData: ApiError = await response.json();
     error = errorData.message || "Failed to load catalog badges";
-    // eslint-disable-next-line no-console
-    console.error("[Catalog] API error:", errorData);
   } else {
     initialData = await response.json();
   }
-} catch (err) {
+} catch {
   error = "Network error: Unable to load catalog badges";
-  // eslint-disable-next-line no-console
-  console.error("[Catalog] Fetch error:", err);
 }
 
 // Fallback data if fetch fails

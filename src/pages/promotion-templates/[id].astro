@@ -44,8 +44,7 @@ try {
   } else {
     template = await response.json();
   }
-} catch (err) {
-  console.error("Error fetching template:", err);
+} catch {
   error = "An unexpected error occurred while loading the template";
 }
 
