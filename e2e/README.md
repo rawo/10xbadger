@@ -2,14 +2,34 @@
 
 This directory contains end-to-end (E2E) tests using Playwright.
 
+## Quick Start
+
+```bash
+# Run all E2E tests
+pnpm test:e2e
+
+# Run with UI mode
+pnpm test:e2e:ui
+
+# Run specific test suite
+pnpm test:e2e --grep "Authentication"
+```
+
+**⚠️ Important**: Many tests require test users and test data. See [SETUP.md](./SETUP.md) for configuration instructions.
+
 ## Structure
 
 ```
 e2e/
-├── pages/              # Page Object Models
-│   └── LoginPage.ts   # Login page POM
-├── LoginPage.spec.ts    # Login page E2E tests
-└── README.md          # This file
+├── Authentication.spec.ts  # Auth flow tests (AUTH-01 to AUTH-05)
+├── LoginPage.spec.ts      # Login page UI tests
+├── pages/                 # Page Object Models
+│   └── LoginPage.ts      # Login page POM
+├── helpers/               # Test helpers
+│   └── auth.ts           # Login/logout utilities
+├── test-config.ts        # Test configuration & credentials
+├── SETUP.md              # Setup guide for test users
+└── README.md             # This file
 ```
 
 ## Page Object Model (POM)

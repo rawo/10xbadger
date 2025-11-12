@@ -14,7 +14,12 @@ import type { UserDto } from "@/types";
 export async function getAuthenticatedUser(Astro: AstroGlobal): Promise<UserDto | null> {
   const supabase = Astro.locals.supabase;
   const userData = await supabase.auth.getUser();
-  return userData.data?.user || null;
+  if (!userData.data.user) {
+    return null;
+  }
+
+  const { data: userf } = await supabase.from("users").select("*").eq("id", userData.data.user.id).single();
+  return userf || null;
 }
 
 /**
