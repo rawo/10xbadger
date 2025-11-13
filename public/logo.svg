@@ -1,0 +1,37 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Badge shape with gradient -->
+  <defs>
+    <linearGradient id="badgeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F97316;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Outer badge -->
+  <path d="M60 10 L75 30 L98 35 L79 54 L83 77 L60 65 L37 77 L41 54 L22 35 L45 30 Z"
+        fill="url(#badgeGradient)"
+        stroke="#1E293B"
+        stroke-width="2"/>
+
+  <!-- Inner circle -->
+  <circle cx="60" cy="60" r="25" fill="#FFFFFF" opacity="0.95"/>
+
+  <!-- "10x" text -->
+  <text x="60" y="60"
+        font-family="Arial, sans-serif"
+        font-size="16"
+        font-weight="bold"
+        fill="#3B82F6"
+        text-anchor="middle"
+        dominant-baseline="central">10x</text>
+
+  <!-- Checkmark -->
+  <path d="M 53 60 L 57 64 L 67 54"
+        stroke="#10B981"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+        opacity="0.8"/>
+</svg>

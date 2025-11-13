@@ -1,127 +1,85 @@
 ---
-import Layout from "../layouts/Layout.astro";
-import { DashboardView } from "@/components/dashboard/DashboardView";
-import { requireAuth } from "@/lib/auth/server-auth";
-import type { DashboardViewModel, PaginatedResponse, BadgeApplicationListItemDto, PromotionListItemDto } from "@/types";
-
 /**
- * Dashboard Page (Home)
+ * Landing Page
  *
- * Server-side rendered page that fetches initial data for the dashboard.
- * Displays user's badge applications, promotions, and quick statistics.
- * Requires authentication.
+ * Public-facing landing page for 10xBadger.
+ * Showcases features and benefits with a clear call-to-action.
+ * No authentication required - redirects authenticated users to dashboard.
  */
 
-// Require authentication - redirects to login if not authenticated
-const user = await requireAuth(Astro);
-if (user instanceof Response) {
-  return user;
-}
-const userId = user.id;
+import Layout from "../layouts/Layout.astro";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { FeaturesSection } from "@/components/landing/FeaturesSection";
+import { Footer } from "@/components/landing/Footer";
+import { getAuthenticatedUser } from "@/lib/auth/server-auth";
 
-// =========================================================================
-// Data Fetching: Badge Applications and Promotions
-// =========================================================================
-
-const baseUrl = Astro.url.origin;
-
-// Helper function to fetch with error handling
-async function fetchData<T>(url: string): Promise<T | null> {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        Cookie: Astro.request.headers.get("Cookie") || "",
-      },
-    });
-
-    if (!response.ok) {
-      // eslint-disable-next-line no-console
-      console.error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(`Error fetching ${url}:`, error);
-    return null;
+// Check if user is already authenticated
+let user = null;
+try {
+  user = await getAuthenticatedUser(Astro);
+  // If authenticated, redirect to dashboard
+  if (user) {
+    return Astro.redirect("/dashboard");
   }
+} catch {
+  // User is not authenticated - continue showing landing page
 }
-
-// Fetch all data in parallel
-const [
-  draftAppsResponse,
-  submittedAppsResponse,
-  acceptedAppsResponse,
-  rejectedAppsResponse,
-  draftPromosResponse,
-  submittedPromosResponse,
-  approvedPromosResponse,
-  rejectedPromosResponse,
-] = await Promise.all([
-  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
-    `${baseUrl}/api/badge-applications?status=draft&limit=10&sort=created_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
-    `${baseUrl}/api/badge-applications?status=submitted&limit=10&sort=submitted_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
-    `${baseUrl}/api/badge-applications?status=accepted&limit=10&sort=created_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
-    `${baseUrl}/api/badge-applications?status=rejected&limit=10&sort=created_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<PromotionListItemDto>>(
-    `${baseUrl}/api/promotions?status=draft&limit=10&sort=created_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<PromotionListItemDto>>(
-    `${baseUrl}/api/promotions?status=submitted&limit=10&sort=submitted_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<PromotionListItemDto>>(
-    `${baseUrl}/api/promotions?status=approved&limit=10&sort=created_at&order=desc`
-  ),
-  fetchData<PaginatedResponse<PromotionListItemDto>>(
-    `${baseUrl}/api/promotions?status=rejected&limit=10&sort=created_at&order=desc`
-  ),
-]);
-
-// =========================================================================
-// Transform Data into DashboardViewModel
-// =========================================================================
-
-const dashboardData: DashboardViewModel = {
-  badgeApplications: {
-    draft: draftAppsResponse?.data || [],
-    submitted: submittedAppsResponse?.data || [],
-    accepted: acceptedAppsResponse?.data || [],
-    rejected: rejectedAppsResponse?.data || [],
-  },
-  promotions: {
-    draft: draftPromosResponse?.data || [],
-    submitted: submittedPromosResponse?.data || [],
-    approved: approvedPromosResponse?.data || [],
-    rejected: rejectedPromosResponse?.data || [],
-  },
-  statistics: {
-    draftApplicationsCount: draftAppsResponse?.pagination.total || 0,
-    submittedApplicationsCount: submittedAppsResponse?.pagination.total || 0,
-    acceptedBadgesCount: acceptedAppsResponse?.pagination.total || 0,
-    rejectedApplicationsCount: rejectedAppsResponse?.pagination.total || 0,
-    draftPromotionsCount: draftPromosResponse?.pagination.total || 0,
-    submittedPromotionsCount: submittedPromosResponse?.pagination.total || 0,
-    approvedPromotionsCount: approvedPromosResponse?.pagination.total || 0,
-    rejectedPromotionsCount: rejectedPromosResponse?.pagination.total || 0,
-  },
-};
 ---
 
-<Layout title="Dashboard - 10xbadger" user={user}>
-  <main class="min-h-screen bg-background">
-    <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-bold text-foreground mb-8">Dashboard</h1>
+<Layout title="10xBadger - Career Growth Made Simple">
+  <main class="min-h-screen">
+    <!-- Hero Section -->
+    <HeroSection client:load />
 
-      <!-- DashboardView React Component with client-side interactivity -->
-      <DashboardView client:load initialData={dashboardData} userId={userId} />
-    </div>
+    <!-- Features Section -->
+    <FeaturesSection client:load />
+
+    <!-- Call to Action Section -->
+    <section class="bg-gradient-to-r from-blue-600 via-purple-600 to-orange-600 py-16 text-white md:py-20">
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Ready to Transform Your Career?</h2>
+        <p class="mx-auto mb-8 max-w-2xl text-lg opacity-90 md:text-xl">
+          Join professionals who are already using 10xBadger to track their achievements and accelerate their career
+          growth.
+        </p>
+        <div class="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <a
+            href="/login"
+            class="inline-flex items-center justify-center gap-2 rounded-md bg-white px-8 py-3 text-lg font-medium text-blue-600 shadow-lg transition-all hover:bg-gray-100 hover:shadow-xl"
+          >
+            Sign In
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          </a>
+          <a
+            href="/register"
+            class="inline-flex items-center justify-center gap-2 rounded-md border-2 border-white px-8 py-3 text-lg font-medium text-white transition-all hover:bg-white/10"
+          >
+            Create Account
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <Footer client:load />
   </main>
 </Layout>
+
+<style>
+  /* Custom grid background pattern */
+  .bg-grid-slate-100 {
+    background-image:
+      linear-gradient(to right, rgb(241 245 249 / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(241 245 249 / 0.5) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  .dark .bg-grid-slate-700\/25 {
+    background-image:
+      linear-gradient(to right, rgb(51 65 85 / 0.25) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(51 65 85 / 0.25) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+</style>

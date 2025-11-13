@@ -1,0 +1,127 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { DashboardView } from "@/components/dashboard/DashboardView";
+import { requireAuth } from "@/lib/auth/server-auth";
+import type { DashboardViewModel, PaginatedResponse, BadgeApplicationListItemDto, PromotionListItemDto } from "@/types";
+
+/**
+ * Dashboard Page (Home)
+ *
+ * Server-side rendered page that fetches initial data for the dashboard.
+ * Displays user's badge applications, promotions, and quick statistics.
+ * Requires authentication.
+ */
+
+// Require authentication - redirects to login if not authenticated
+const user = await requireAuth(Astro);
+if (user instanceof Response) {
+  return user;
+}
+const userId = user.id;
+
+// =========================================================================
+// Data Fetching: Badge Applications and Promotions
+// =========================================================================
+
+const baseUrl = Astro.url.origin;
+
+// Helper function to fetch with error handling
+async function fetchData<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Cookie: Astro.request.headers.get("Cookie") || "",
+      },
+    });
+
+    if (!response.ok) {
+      // eslint-disable-next-line no-console
+      console.error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error(`Error fetching ${url}:`, error);
+    return null;
+  }
+}
+
+// Fetch all data in parallel
+const [
+  draftAppsResponse,
+  submittedAppsResponse,
+  acceptedAppsResponse,
+  rejectedAppsResponse,
+  draftPromosResponse,
+  submittedPromosResponse,
+  approvedPromosResponse,
+  rejectedPromosResponse,
+] = await Promise.all([
+  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
+    `${baseUrl}/api/badge-applications?status=draft&limit=10&sort=created_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
+    `${baseUrl}/api/badge-applications?status=submitted&limit=10&sort=submitted_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
+    `${baseUrl}/api/badge-applications?status=accepted&limit=10&sort=created_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<BadgeApplicationListItemDto>>(
+    `${baseUrl}/api/badge-applications?status=rejected&limit=10&sort=created_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<PromotionListItemDto>>(
+    `${baseUrl}/api/promotions?status=draft&limit=10&sort=created_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<PromotionListItemDto>>(
+    `${baseUrl}/api/promotions?status=submitted&limit=10&sort=submitted_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<PromotionListItemDto>>(
+    `${baseUrl}/api/promotions?status=approved&limit=10&sort=created_at&order=desc`
+  ),
+  fetchData<PaginatedResponse<PromotionListItemDto>>(
+    `${baseUrl}/api/promotions?status=rejected&limit=10&sort=created_at&order=desc`
+  ),
+]);
+
+// =========================================================================
+// Transform Data into DashboardViewModel
+// =========================================================================
+
+const dashboardData: DashboardViewModel = {
+  badgeApplications: {
+    draft: draftAppsResponse?.data || [],
+    submitted: submittedAppsResponse?.data || [],
+    accepted: acceptedAppsResponse?.data || [],
+    rejected: rejectedAppsResponse?.data || [],
+  },
+  promotions: {
+    draft: draftPromosResponse?.data || [],
+    submitted: submittedPromosResponse?.data || [],
+    approved: approvedPromosResponse?.data || [],
+    rejected: rejectedPromosResponse?.data || [],
+  },
+  statistics: {
+    draftApplicationsCount: draftAppsResponse?.pagination.total || 0,
+    submittedApplicationsCount: submittedAppsResponse?.pagination.total || 0,
+    acceptedBadgesCount: acceptedAppsResponse?.pagination.total || 0,
+    rejectedApplicationsCount: rejectedAppsResponse?.pagination.total || 0,
+    draftPromotionsCount: draftPromosResponse?.pagination.total || 0,
+    submittedPromotionsCount: submittedPromosResponse?.pagination.total || 0,
+    approvedPromotionsCount: approvedPromosResponse?.pagination.total || 0,
+    rejectedPromotionsCount: rejectedPromosResponse?.pagination.total || 0,
+  },
+};
+---
+
+<Layout title="Dashboard - 10xbadger" user={user}>
+  <main class="min-h-screen bg-background">
+    <div class="container mx-auto px-4 py-8">
+      <h1 class="text-3xl font-bold text-foreground mb-8">Dashboard</h1>
+
+      <!-- DashboardView React Component with client-side interactivity -->
+      <DashboardView client:load initialData={dashboardData} userId={userId} />
+    </div>
+  </main>
+</Layout>
