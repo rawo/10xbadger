@@ -9,23 +9,15 @@ import type { ApiError } from "@/types";
  *
  * Retrieves a single badge application with full details.
  *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
- *
  * Path Parameters:
  * - id: Badge application UUID (required)
  *
- * Development Mode Behavior:
- * - No authentication required
- * - Default user ID is used for authorization checks
- * - Default user is non-admin
- * - To test admin features, change `isAdmin = true` in the code
- *
- * Production Authorization (when enabled):
+ * Authorization:
  * - Non-admin users: Can only view their own badge applications
  * - Admin users: Can view any badge application
  *
  * @returns 200 OK with badge application details
+ * @returns 401 Unauthorized if not authenticated
  * @returns 403 Forbidden if non-owner non-admin tries to access
  * @returns 404 Not Found if badge application doesn't exist
  * @returns 400 Bad Request if invalid UUID format
@@ -34,21 +26,8 @@ import type { ApiError } from "@/types";
 export const GET: APIRoute = async (context) => {
   try {
     // =========================================================================
-    // DEVELOPMENT MODE: Authentication Disabled
-    // =========================================================================
-    // TODO: Re-enable authentication before production deployment
-    // Authentication will be implemented later. For now, we skip auth checks
-    // and use a default non-admin user for development purposes.
-
-    const isAdmin = false; // Default to non-admin user for development
-    const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user (John Doe)
-
-    // =========================================================================
-    // PRODUCTION CODE (Currently Disabled)
-    // =========================================================================
-    // Uncomment the code below when authentication is ready:
-    /*
     // Step 1: Authentication Check
+    // =========================================================================
     const {
       data: { user },
       error: authError,
@@ -85,7 +64,6 @@ export const GET: APIRoute = async (context) => {
 
     const isAdmin = userData.is_admin;
     const userId = user.id;
-    */
 
     // =========================================================================
     // Step 3: Validate Path Parameter
@@ -176,9 +154,43 @@ export const GET: APIRoute = async (context) => {
 
 export const PUT: APIRoute = async (context) => {
   try {
-    // DEVELOPMENT MODE defaults
-    const isAdmin = false;
-    const userId = "550e8400-e29b-41d4-a716-446655440100";
+    // Authentication Check
+    const {
+      data: { user },
+      error: authError,
+    } = await context.locals.supabase.auth.getUser();
+
+    if (authError || !user) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "Authentication required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Get User Info (Admin Status)
+    const { data: userData, error: userError } = await context.locals.supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "User not found",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const isAdmin = userData.is_admin;
+    const userId = user.id;
 
     // Validate path parameter
     const id = context.params.id as string;
@@ -286,9 +298,43 @@ export const PUT: APIRoute = async (context) => {
 
 export const DELETE: APIRoute = async (context) => {
   try {
-    // DEVELOPMENT MODE defaults
-    const isAdmin = false;
-    const userId = "550e8400-e29b-41d4-a716-446655440100";
+    // Authentication Check
+    const {
+      data: { user },
+      error: authError,
+    } = await context.locals.supabase.auth.getUser();
+
+    if (authError || !user) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "Authentication required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Get User Info (Admin Status)
+    const { data: userData, error: userError } = await context.locals.supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "User not found",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const isAdmin = userData.is_admin;
+    const userId = user.id;
 
     // Validate path parameter
     const id = context.params.id as string;
