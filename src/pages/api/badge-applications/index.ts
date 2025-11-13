@@ -11,29 +11,21 @@ import type { ApiError } from "@/types";
  *
  * Lists badge applications with filtering, sorting, and pagination.
  *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
- *
  * Query Parameters:
  * - status: Filter by application status (draft, submitted, accepted, rejected, used_in_promotion)
- * - applicant_id: Filter by applicant ID (UUID) - admin only (currently disabled in dev)
+ * - applicant_id: Filter by applicant ID (UUID) - admin only
  * - catalog_badge_id: Filter by catalog badge ID (UUID)
  * - sort: Sort field (created_at, submitted_at) - default: created_at
  * - order: Sort order (asc, desc) - default: desc
  * - limit: Page size (1-100) - default: 20
  * - offset: Page offset (>= 0) - default: 0
  *
- * Development Mode Behavior:
- * - No authentication required
- * - Default user ID is used for filtering (non-admin sees only their own applications)
- * - Default user is non-admin
- * - To test admin features, change `isAdmin = true` in the code
- *
- * Production Authorization (when enabled):
+ * Authorization:
  * - Non-admin users: Can only view their own badge applications
  * - Admin users: Can view all badge applications and filter by any applicant
  *
  * @returns 200 OK with paginated badge applications
+ * @returns 401 Unauthorized if not authenticated
  * @returns 403 Forbidden if non-admin tries to use applicant_id filter
  * @returns 400 Bad Request if query parameters are invalid
  * @returns 500 Internal Server Error on unexpected errors
@@ -41,21 +33,8 @@ import type { ApiError } from "@/types";
 export const GET: APIRoute = async (context) => {
   try {
     // =========================================================================
-    // DEVELOPMENT MODE: Authentication Disabled
-    // =========================================================================
-    // TODO: Re-enable authentication before production deployment
-    // Authentication will be implemented later. For now, we skip auth checks
-    // and use a default non-admin user for development purposes.
-
-    const isAdmin = false; // Default to non-admin user for development
-    const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user from sample data
-
-    // =========================================================================
-    // PRODUCTION CODE (Currently Disabled)
-    // =========================================================================
-    // Uncomment the code below when authentication is ready:
-    /*
     // Step 1: Authentication Check
+    // =========================================================================
     const {
       data: { user },
       error: authError,
@@ -92,7 +71,6 @@ export const GET: APIRoute = async (context) => {
 
     const isAdmin = userData.is_admin;
     const userId = user.id;
-    */
 
     // =========================================================================
     // Step 3: Parse and Validate Query Parameters
@@ -173,21 +151,13 @@ export const GET: APIRoute = async (context) => {
  *
  * Creates a new badge application in draft status.
  *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
- *
  * Request Body (JSON):
  * - catalog_badge_id: UUID of the catalog badge (required)
  * - date_of_application: Date in YYYY-MM-DD format (required)
  * - date_of_fulfillment: Date in YYYY-MM-DD format (optional, must be >= date_of_application)
  * - reason: Text description (optional, max 2000 characters)
  *
- * Development Mode Behavior:
- * - No authentication required
- * - Default user ID is used as applicant (John Doe)
- * - To test with different users, change the userId in the code
- *
- * Production Authorization (when enabled):
+ * Authorization:
  * - Must be authenticated
  * - User becomes the applicant_id
  * - Badge application is created in draft status
@@ -199,26 +169,15 @@ export const GET: APIRoute = async (context) => {
  * - date_of_fulfillment must be >= date_of_application (if provided)
  *
  * @returns 201 Created with badge application details
+ * @returns 401 Unauthorized if not authenticated
  * @returns 400 Bad Request if validation fails or catalog badge is inactive/not found
  * @returns 500 Internal Server Error on unexpected errors
  */
 export const POST: APIRoute = async (context) => {
   try {
     // =========================================================================
-    // DEVELOPMENT MODE: Authentication Disabled
-    // =========================================================================
-    // TODO: Re-enable authentication before production deployment
-    // Authentication will be implemented later. For now, we skip auth checks
-    // and use a default user for development purposes.
-
-    const userId = "550e8400-e29b-41d4-a716-446655440100"; // Default user (John Doe)
-
-    // =========================================================================
-    // PRODUCTION CODE (Currently Disabled)
-    // =========================================================================
-    // Uncomment the code below when authentication is ready:
-    /*
     // Step 1: Authentication Check
+    // =========================================================================
     const {
       data: { user },
       error: authError,
@@ -236,7 +195,6 @@ export const POST: APIRoute = async (context) => {
     }
 
     const userId = user.id;
-    */
 
     // =========================================================================
     // Step 2: Parse and Validate Request Body
