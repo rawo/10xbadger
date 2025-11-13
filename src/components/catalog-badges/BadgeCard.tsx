@@ -15,11 +15,11 @@ export function BadgeCard({ badge, isAdmin, onClick, onEdit, onDeactivate }: Bad
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "technical":
-        return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+        return "bg-primary/10 text-primary";
       case "organizational":
         return "bg-green-500/10 text-green-700 dark:text-green-400";
       case "softskilled":
-        return "bg-purple-500/10 text-purple-700 dark:text-purple-400";
+        return "bg-secondary/10 text-secondary";
       default:
         return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
     }
@@ -32,7 +32,7 @@ export function BadgeCard({ badge, isAdmin, onClick, onEdit, onDeactivate }: Bad
       case "silver":
         return "bg-gray-400/10 text-gray-700 dark:text-gray-400";
       case "bronze":
-        return "bg-orange-500/10 text-orange-700 dark:text-orange-400";
+        return "bg-accent/10 text-accent";
       default:
         return "bg-gray-500/10 text-gray-700 dark:text-gray-400";
     }

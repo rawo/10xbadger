@@ -17,11 +17,11 @@ import { cn } from "@/lib/utils";
 function getCategoryColorClass(category: string): string {
   switch (category) {
     case "technical":
-      return "border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950";
+      return "border-primary/50 text-primary bg-primary/5";
     case "organizational":
       return "border-green-500 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950";
     case "softskilled":
-      return "border-purple-500 text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950";
+      return "border-secondary/50 text-secondary bg-secondary/5";
     default:
       return "";
   }
@@ -37,7 +37,7 @@ function getLevelColorClass(level: string): string {
     case "silver":
       return "border-gray-400 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900";
     case "bronze":
-      return "border-orange-500 text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-950";
+      return "border-accent/50 text-accent bg-accent/5";
     default:
       return "";
   }

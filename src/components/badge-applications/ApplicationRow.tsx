@@ -53,11 +53,11 @@ export function ApplicationRow(props: ApplicationRowProps) {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case "technical":
-        return "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300";
+        return "bg-primary/10 text-primary";
       case "organizational":
-        return "bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300";
-      case "softskilled":
         return "bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300";
+      case "softskilled":
+        return "bg-secondary/10 text-secondary";
       default:
         return "bg-gray-50 text-gray-700";
     }
@@ -74,7 +74,7 @@ export function ApplicationRow(props: ApplicationRowProps) {
       case "silver":
         return "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
       case "bronze":
-        return "bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300";
+        return "bg-accent/10 text-accent";
       default:
         return "bg-gray-50 text-gray-700";
     }

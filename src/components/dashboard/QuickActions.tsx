@@ -84,9 +84,9 @@ export function QuickActions({ className }: QuickActionsProps) {
             variant="outline"
             className="w-full h-auto py-4 px-4 flex items-start gap-3 hover:bg-accent/50 transition-all duration-300 hover:scale-105 hover:shadow-md active:scale-95"
           >
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
               <svg
-                className="h-5 w-5 text-blue-600 dark:text-blue-400"
+                className="h-5 w-5 text-secondary"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"

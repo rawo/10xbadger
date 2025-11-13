@@ -86,32 +86,23 @@ export function RegisterView({ error }: RegisterViewProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-orange-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         {/* Logo and App Name */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10">
-            <svg
-              className="size-10 text-primary"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
-              />
-            </svg>
+        <div className="text-center space-y-3">
+          <div className="mx-auto flex size-20 items-center justify-center">
+            <img src="/logo.svg" alt="10xBadger Logo" className="h-20 w-20" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">10xbadger</h1>
+          <h1 className="text-3xl font-bold">
+            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-orange-600 bg-clip-text text-transparent">
+              10xBadger
+            </span>
+          </h1>
           <p className="text-muted-foreground text-sm">Badge and Promotion Management</p>
         </div>
 
         {/* Registration Card */}
-        <Card>
+        <Card className="border-2 shadow-xl">
           <CardHeader>
             <CardTitle>Create Account</CardTitle>
             <CardDescription>Enter your details to get started</CardDescription>
