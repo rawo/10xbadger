@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import { Toaster } from "@/components/ui/toaster";
 import { UserMenu } from "@/components/navigation/UserMenu";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { getAuthenticatedUser } from "@/lib/auth/server-auth";
 
 interface Props {
@@ -50,6 +51,18 @@ const isAuthenticated = user !== null;
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    <script is:inline>
+      (function () {
+        try {
+          const t = localStorage.getItem("theme");
+          const theme = t || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          if (theme === "dark") document.documentElement.classList.add("dark");
+        } catch {
+          // Ignore errors
+        }
+      })();
+    </script>
   </head>
   <body data-authenticated={isAuthenticated}>
     <!-- Navigation Header (hidden on auth pages) -->
@@ -135,12 +148,15 @@ const isAuthenticated = user !== null;
               {user ? (
                 <UserMenu client:load user={user} />
               ) : (
-                <a
-                  href="/login"
-                  class="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                >
-                  Sign In
-                </a>
+                <>
+                  <ThemeToggle client:load />
+                  <a
+                    href="/login"
+                    class="hover:bg-primary/90 bg-primary text-primary-foreground inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                  >
+                    Sign In
+                  </a>
+                </>
               )}
             </div>
           </div>

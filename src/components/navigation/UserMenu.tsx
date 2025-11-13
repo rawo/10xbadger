@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { User, Settings, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface UserMenuProps {
   user: {
@@ -86,6 +87,12 @@ export function UserMenu({ user }: UserMenuProps) {
                 <Settings className="size-4" aria-hidden="true" />
                 <span>Settings</span>
               </button>
+
+              {/* Theme Toggle */}
+              <div className="hover:bg-accent flex items-center justify-between px-4 py-2 text-sm transition-colors">
+                <span>Theme</span>
+                <ThemeToggle />
+              </div>
             </div>
 
             {/* Admin Section */}
