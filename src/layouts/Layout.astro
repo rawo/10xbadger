@@ -54,6 +54,7 @@ const isAuthenticated = user !== null;
 
     <script is:inline>
       (function () {
+        // eslint-disable-next-line prettier/prettier
         try {
           const t = localStorage.getItem("theme");
           const theme = t || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
