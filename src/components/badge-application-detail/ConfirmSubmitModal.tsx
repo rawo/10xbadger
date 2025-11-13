@@ -7,14 +7,15 @@
 
 import { useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import type { ConfirmSubmitModalProps } from "@/types";
 import { Send, AlertCircle } from "lucide-react";
 
@@ -35,15 +36,15 @@ export function ConfirmSubmitModal({ isOpen, applicationTitle, onConfirm, onCanc
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
             Submit Application for Review?
-          </DialogTitle>
-          <DialogDescription>{applicationTitle}</DialogDescription>
-        </DialogHeader>
+          </AlertDialogTitle>
+          <AlertDialogDescription>{applicationTitle}</AlertDialogDescription>
+        </AlertDialogHeader>
 
         <div className="py-4">
           <div className="flex items-start gap-3 p-4 rounded-md bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800">
@@ -58,15 +59,15 @@ export function ConfirmSubmitModal({ isOpen, applicationTitle, onConfirm, onCanc
           </div>
         </div>
 
-        <DialogFooter>
-          <Button onClick={onCancel} variant="outline" disabled={isSubmitting}>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onCancel} disabled={isSubmitting}>
             Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={isSubmitting} variant="default">
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm} disabled={isSubmitting}>
             {isSubmitting ? "Submitting..." : "Submit Application"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
