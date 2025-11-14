@@ -6,13 +6,15 @@ import { POST } from "../promotion-templates/index";
  * Create a mock Supabase client for testing POST /api/promotion-templates
  * Supports authentication, admin authorization, and template creation
  */
-function createMockSupabase(options: {
-  isAuthenticated?: boolean;
-  userId?: string;
-  isAdmin?: boolean;
-  userNotFound?: boolean;
-  templateConflict?: boolean;
-} = {}) {
+function createMockSupabase(
+  options: {
+    isAuthenticated?: boolean;
+    userId?: string;
+    isAdmin?: boolean;
+    userNotFound?: boolean;
+    templateConflict?: boolean;
+  } = {}
+) {
   const {
     isAuthenticated = true,
     userId = "admin-123",

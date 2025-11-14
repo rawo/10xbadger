@@ -299,7 +299,7 @@ export const PUT: APIRoute = async (context) => {
       // Note: user might not be available if error occurred during authentication
       const userId = (() => {
         try {
-          return (context.locals as any).user?.id ?? null;
+          return (context.locals as { user?: { id: string } }).user?.id ?? null;
         } catch {
           return null;
         }
@@ -320,4 +320,3 @@ export const PUT: APIRoute = async (context) => {
     return new Response(JSON.stringify(apiError), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 };
-

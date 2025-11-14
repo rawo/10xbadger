@@ -6,14 +6,16 @@ import { POST } from "../promotion-templates/[id]/deactivate";
  * Create a mock Supabase client for testing POST /api/promotion-templates/:id/deactivate
  * Supports authentication, admin authorization, and template deactivation
  */
-function createMockSupabase(options: {
-  isAuthenticated?: boolean;
-  userId?: string;
-  isAdmin?: boolean;
-  userNotFound?: boolean;
-  template?: Record<string, unknown> | null;
-  templateNotFound?: boolean;
-} = {}) {
+function createMockSupabase(
+  options: {
+    isAuthenticated?: boolean;
+    userId?: string;
+    isAdmin?: boolean;
+    userNotFound?: boolean;
+    template?: Record<string, unknown> | null;
+    templateNotFound?: boolean;
+  } = {}
+) {
   const {
     isAuthenticated = true,
     userId = "admin-123",

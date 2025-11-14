@@ -6,14 +6,16 @@ import { PUT } from "../promotion-templates/[id]";
  * Create a mock Supabase client for testing PUT /api/promotion-templates/:id
  * Supports authentication, admin authorization, and template updates
  */
-function createMockSupabase(options: {
-  isAuthenticated?: boolean;
-  userId?: string;
-  isAdmin?: boolean;
-  userNotFound?: boolean;
-  templateNotFound?: boolean;
-  templateId?: string;
-} = {}) {
+function createMockSupabase(
+  options: {
+    isAuthenticated?: boolean;
+    userId?: string;
+    isAdmin?: boolean;
+    userNotFound?: boolean;
+    templateNotFound?: boolean;
+    templateId?: string;
+  } = {}
+) {
   const {
     isAuthenticated = true,
     userId = "admin-123",

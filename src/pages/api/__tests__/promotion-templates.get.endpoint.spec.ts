@@ -6,13 +6,15 @@ import { GET } from "../promotion-templates/index";
  * Create a mock Supabase client for testing GET /api/promotion-templates
  * Supports authentication, user lookup, and template listing with filters
  */
-function createMockSupabase(options: {
-  isAuthenticated?: boolean;
-  userId?: string;
-  isAdmin?: boolean;
-  templates?: Array<Record<string, unknown>>;
-  totalCount?: number;
-} = {}) {
+function createMockSupabase(
+  options: {
+    isAuthenticated?: boolean;
+    userId?: string;
+    isAdmin?: boolean;
+    templates?: Record<string, unknown>[];
+    totalCount?: number;
+  } = {}
+) {
   const {
     isAuthenticated = true,
     userId = "user-123",
