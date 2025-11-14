@@ -311,11 +311,35 @@ export class PromotionTemplateService {
    * but new promotions cannot use a deactivated template.
    *
    * @param id - Template UUID to deactivate
-   * @throws Error with message containing "not found" if template doesn't exist
+   * @returns The deactivated promotion template
+   * @throws Error with message "TEMPLATE_NOT_FOUND" if template doesn't exist
+   * @throws Error with message "TEMPLATE_ALREADY_INACTIVE" if template is already inactive
    * @throws Error if database query fails
    */
-  async deactivatePromotionTemplate(id: string): Promise<void> {
-    const { error } = await this.supabase
+  async deactivatePromotionTemplate(id: string): Promise<PromotionTemplateDto> {
+    // First, check if template exists and get its current status
+    const { data: existing, error: fetchError } = await this.supabase
+      .from("promotion_templates")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existing) {
+      // Handle "not found"
+      if (fetchError?.code === "PGRST116") {
+        // PostgREST error code for no rows returned
+        throw new Error("TEMPLATE_NOT_FOUND");
+      }
+      throw new Error(`Failed to fetch promotion template: ${fetchError?.message}`);
+    }
+
+    // Check if already inactive
+    if (!existing.is_active) {
+      throw new Error("TEMPLATE_ALREADY_INACTIVE");
+    }
+
+    // Deactivate the template
+    const { data, error } = await this.supabase
       .from("promotion_templates")
       .update({
         is_active: false,
@@ -326,14 +350,21 @@ export class PromotionTemplateService {
       .single();
 
     if (error) {
-      // Handle "not found" vs actual errors
-      if (error.code === "PGRST116") {
-        // PostgREST error code for no rows returned
-        throw new Error("Promotion template not found");
-      }
       throw new Error(`Failed to deactivate promotion template: ${error.message}`);
     }
 
-    // Successful update means template was deactivated
+    // Return the deactivated template
+    return {
+      id: data.id,
+      name: data.name,
+      path: data.path,
+      from_level: data.from_level,
+      to_level: data.to_level,
+      rules: data.rules as unknown as PromotionTemplateRule[], // Type assertion for JSONB
+      is_active: data.is_active,
+      created_by: data.created_by,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+    };
   }
 }

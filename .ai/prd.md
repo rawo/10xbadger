@@ -81,7 +81,15 @@ FR-011 Position levels and required badges
   }
 }
 Where positionLevel is many of ["J1","J2","M1","M2","S1","S2"], category is many of ["technical", "organizational","softskilled"], badgeLevel is many of ["gold", "silver", "bronze"]
-
+ 
+FR-012 Promotion Template editor
+- Function restricted to Admin role only
+- Admin can add, modify Promotion Template
+- Admin can deactivate Promotion Template
+- Deactivated Promotion Template can't be used to create new Promotions by Engineers
+- Deactivated Promotion Template for already exiting Promotions is still valid
+- Only active Promotion Templates can be used by Engineers to create new Promotions
+ 
 ## 4. Product Boundaries
 Out of scope for MVP:
 - Mobile application
@@ -233,6 +241,18 @@ Acceptance Criteria:
 - Auth failures and reservation conflicts are logged with timestamps and relevant contextual fields.
 - Logs are accessible to dev/ops.
 
+US-15 Promotion Template management
+Description: As an administrator, I want to be able to create new and edit existing Promotion Templates.
+Acceptance Criteria:
+- Admin can create new Promotion Template.
+- Admin can edit existing Promotion Template.
+
+US-16 Promotion Template deactivation
+Description: As an administrator, I want to be able to deactivate active Promotion Template
+Acceptance Criteria:
+- Admin can deactivate a Promotion Template; it becomes read-only and is excluded from new promotions.
+- Deactivating a Promotion Template does not invalidate existing Promotions.
+ 
 ## 6. Success Metrics
 SM-001 Adoption Rate
 - Target: Registered users / total employees ≥ 90% within 2 months of launch.

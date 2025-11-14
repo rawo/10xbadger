@@ -4,7 +4,10 @@ Before we begin, review the following information:
 
 1. Route API specification:
    <route_api_specification>
-   `GET /api/position-levels` from @api-plan.md
+ from @api-plan.md
+   `POST /api/promotion-templates`
+   `PUT /api/promotion-templates/:id`
+   `POST /api/promotion-templates/:id/deactivate`
    </route_api_specification>
 
 2. Related database resources:

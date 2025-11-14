@@ -1053,7 +1053,7 @@
 
 ---
 
-#### `DELETE /api/promotion-templates/:id`
+#### `POST /api/promotion-templates/:id/deactivate`
 **Description**: Deactivates a promotion template (admin only). Sets `is_active = false`.
 
 **Authentication**: Required (admin only)
@@ -1061,10 +1061,32 @@
 **Path Parameters**:
 - `id` (UUID, required) - Promotion template ID
 
+**Request Payload**: None
+
 **Response**:
 ```json
 {
-  "message": "Promotion template deactivated successfully"
+  "id": "750e8400-e29b-41d4-a716-446655440020",
+  "name": "S1 to S2 - Technical Path",
+  "path": "technical",
+  "from_level": "S1",
+  "to_level": "S2",
+  "rules": [
+    {
+      "category": "technical",
+      "level": "silver",
+      "count": 6
+    },
+    {
+      "category": "any",
+      "level": "gold",
+      "count": 1
+    }
+  ],
+  "is_active": false,
+  "created_by": "550e8400-e29b-41d4-a716-446655440002",
+  "created_at": "2025-01-05T10:00:00Z",
+  "updated_at": "2025-01-22T17:30:00Z"
 }
 ```
 
@@ -1075,9 +1097,12 @@
 - `401 Unauthorized` - Not authenticated
 - `403 Forbidden` - User is not admin
 - `404 Not Found` - Template not found
+- `409 Conflict` - Template already inactive
 
 **Business Logic**:
 - Sets `is_active = false`
+- Updates `updated_at` timestamp
+- Deactivated templates excluded from new promotion creation
 - Existing promotions using this template remain valid
 
 ---
@@ -1784,6 +1809,7 @@
 | `GET /api/promotion-templates` | ✓ | ✓ |
 | `POST /api/promotion-templates` | ✓ | ✗ |
 | `PUT /api/promotion-templates/:id` | ✓ | ✗ |
+| `POST /api/promotion-templates/:id/deactivate` | ✓ | ✗ |
 | `GET /api/promotions` | ✓ (all users) | ✓ (own only) |
 | `POST /api/promotions` | ✓ | ✓ |
 | `DELETE /api/promotions/:id` | ✗ | ✓ (own draft only) |

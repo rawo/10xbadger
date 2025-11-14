@@ -68,10 +68,25 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
       updated_at: new Date().toISOString(),
     };
 
-    // Create mock that returns template on update
+    // Create mock that supports both select and update
     const supabase = {
       from() {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async single() {
+                    // Return existing active template
+                    return {
+                      data: mockTemplate,
+                      error: null,
+                    };
+                  },
+                };
+              },
+            };
+          },
           update(updateData: Record<string, unknown>) {
             return {
               eq() {
@@ -97,17 +112,43 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
 
     const service = new PromotionTemplateService(supabase);
 
-    // Should not throw
-    await expect(service.deactivatePromotionTemplate(templateId)).resolves.toBeUndefined();
+    // Should not throw and return the deactivated template
+    const result = await service.deactivatePromotionTemplate(templateId);
+    expect(result).toBeDefined();
+    expect(result.id).toBe(templateId);
+    expect(result.is_active).toBe(false);
   });
 
   it("updates updated_at timestamp when deactivating", async () => {
     const templateId = "template-123";
     let capturedUpdateData: Record<string, unknown> | null = null;
+    const mockTemplate = {
+      id: templateId,
+      name: "Test Template",
+      is_active: true,
+      created_by: "admin-id",
+      path: "technical",
+      from_level: "S1",
+      to_level: "S2",
+      rules: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
     const supabase = {
       from() {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async single() {
+                    return { data: mockTemplate, error: null };
+                  },
+                };
+              },
+            };
+          },
           update(updateData: Record<string, unknown>) {
             capturedUpdateData = updateData;
             return {
@@ -116,7 +157,7 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
                   select() {
                     return {
                       async single() {
-                        return { data: { id: templateId, ...updateData }, error: null };
+                        return { data: { ...mockTemplate, ...updateData }, error: null };
                       },
                     };
                   },
@@ -141,6 +182,18 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
     const supabase = {
       from() {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async single() {
+                    // Simulate PostgREST "no rows" error
+                    return { data: null, error: { code: "PGRST116", message: "No rows found" } };
+                  },
+                };
+              },
+            };
+          },
           update() {
             return {
               eq() {
@@ -148,7 +201,6 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
                   select() {
                     return {
                       async single() {
-                        // Simulate PostgREST "no rows" error
                         return { data: null, error: { code: "PGRST116", message: "No rows found" } };
                       },
                     };
@@ -163,13 +215,25 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
 
     const service = new PromotionTemplateService(supabase);
 
-    await expect(service.deactivatePromotionTemplate("non-existent-id")).rejects.toThrow("not found");
+    await expect(service.deactivatePromotionTemplate("non-existent-id")).rejects.toThrow("TEMPLATE_NOT_FOUND");
   });
 
   it("throws error on database failure", async () => {
     const supabase = {
       from() {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async single() {
+                    // Simulate database error
+                    return { data: null, error: { code: "DB_ERROR", message: "Connection timeout" } };
+                  },
+                };
+              },
+            };
+          },
           update() {
             return {
               eq() {
@@ -177,7 +241,6 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
                   select() {
                     return {
                       async single() {
-                        // Simulate database error
                         return { data: null, error: { code: "DB_ERROR", message: "Connection timeout" } };
                       },
                     };
@@ -192,16 +255,39 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
 
     const service = new PromotionTemplateService(supabase);
 
-    await expect(service.deactivatePromotionTemplate("template-id")).rejects.toThrow("Failed to deactivate");
+    await expect(service.deactivatePromotionTemplate("template-id")).rejects.toThrow("Failed to fetch");
   });
 
   it("sets is_active to false when deactivating", async () => {
     const templateId = "template-123";
     let capturedUpdateData: Record<string, unknown> | null = null;
+    const mockTemplate = {
+      id: templateId,
+      name: "Test Template",
+      is_active: true,
+      created_by: "admin-id",
+      path: "technical",
+      from_level: "S1",
+      to_level: "S2",
+      rules: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
     const supabase = {
       from() {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async single() {
+                    return { data: mockTemplate, error: null };
+                  },
+                };
+              },
+            };
+          },
           update(updateData: Record<string, unknown>) {
             capturedUpdateData = updateData;
             return {
@@ -210,7 +296,7 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
                   select() {
                     return {
                       async single() {
-                        return { data: { id: templateId, ...updateData }, error: null };
+                        return { data: { ...mockTemplate, ...updateData }, error: null };
                       },
                     };
                   },
@@ -232,13 +318,31 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
     const templateId = "template-123";
     const alreadyDeactivated = {
       id: templateId,
+      name: "Test Template",
+      path: "technical",
+      from_level: "S1",
+      to_level: "S2",
+      rules: [],
       is_active: false,
+      created_by: "admin-id",
+      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     const supabase = {
       from() {
         return {
+          select() {
+            return {
+              eq() {
+                return {
+                  async single() {
+                    return { data: alreadyDeactivated, error: null };
+                  },
+                };
+              },
+            };
+          },
           update(updateData: Record<string, unknown>) {
             return {
               eq() {
@@ -260,7 +364,7 @@ describe("PromotionTemplateService.deactivatePromotionTemplate", () => {
 
     const service = new PromotionTemplateService(supabase);
 
-    // Should succeed even if already deactivated (idempotent operation)
-    await expect(service.deactivatePromotionTemplate(templateId)).resolves.toBeUndefined();
+    // Should throw because template is already inactive
+    await expect(service.deactivatePromotionTemplate(templateId)).rejects.toThrow("TEMPLATE_ALREADY_INACTIVE");
   });
 });

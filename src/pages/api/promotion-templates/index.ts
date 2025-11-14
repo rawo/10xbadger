@@ -11,9 +11,7 @@ import { logError } from "../../../lib/error-logger";
  * GET /api/promotion-templates
  *
  * Lists promotion templates with filtering, sorting, and pagination.
- *
- * ⚠️  DEVELOPMENT MODE: Authentication is currently DISABLED
- * TODO: Re-enable authentication before production deployment
+ * Requires authentication - all authenticated users can view templates.
  *
  * Query Parameters:
  * - path: Filter by career path (technical, financial, management)
@@ -25,32 +23,20 @@ import { logError } from "../../../lib/error-logger";
  * - limit: Page size (1-100) - default: 20
  * - offset: Page offset (>= 0) - default: 0
  *
- * Development Mode Behavior:
- * - No authentication required
- * - All templates are visible (no role-based restrictions)
- *
- * Production Authorization (when enabled):
+ * Authorization:
  * - All authenticated users can view promotion templates
  * - No admin-only restrictions for viewing templates
  *
  * @returns 200 OK with paginated promotion templates
+ * @returns 401 Unauthorized if not authenticated
  * @returns 400 Bad Request if query parameters are invalid
  * @returns 500 Internal Server Error on unexpected errors
  */
 export const GET: APIRoute = async (context) => {
   try {
     // =========================================================================
-    // DEVELOPMENT MODE: Authentication Disabled
-    // =========================================================================
-    // TODO: Re-enable authentication before production deployment
-    // Authentication will be implemented later. For now, we skip auth checks.
-
-    // =========================================================================
-    // PRODUCTION CODE (Currently Disabled)
-    // =========================================================================
-    // Uncomment the code below when authentication is ready:
-    /*
     // Step 1: Authentication Check
+    // =========================================================================
     const {
       data: { user },
       error: authError,
@@ -68,7 +54,6 @@ export const GET: APIRoute = async (context) => {
     }
 
     // Note: No admin check needed - all authenticated users can view templates
-    */
 
     // =========================================================================
     // Step 2: Parse and Validate Query Parameters
@@ -131,11 +116,74 @@ export const GET: APIRoute = async (context) => {
 /**
  * POST /api/promotion-templates
  *
- * Creates a new promotion template. Authentication/authorization is disabled for development.
+ * Creates a new promotion template (admin only).
+ * Requires authentication and admin privileges.
+ *
+ * @returns 201 Created with new promotion template
+ * @returns 401 Unauthorized if not authenticated
+ * @returns 403 Forbidden if not admin
+ * @returns 400 Bad Request if validation fails
+ * @returns 409 Conflict if template already exists
+ * @returns 500 Internal Server Error on unexpected errors
  */
 export const POST: APIRoute = async (context) => {
   try {
-    // Step 1: Parse request body
+    // =========================================================================
+    // Step 1: Authentication Check
+    // =========================================================================
+    const {
+      data: { user },
+      error: authError,
+    } = await context.locals.supabase.auth.getUser();
+
+    if (authError || !user) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "Authentication required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================================================================
+    // Step 2: Get User Info (Admin Status)
+    // =========================================================================
+    const { data: userData, error: userError } = await context.locals.supabase
+      .from("users")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData) {
+      const error: ApiError = {
+        error: "unauthorized",
+        message: "User not found",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================================================================
+    // Step 3: Authorization Check (Admin Only)
+    // =========================================================================
+    if (!userData.is_admin) {
+      const error: ApiError = {
+        error: "forbidden",
+        message: "Admin access required",
+      };
+      return new Response(JSON.stringify(error), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // =========================================================================
+    // Step 4: Parse Request Body
+    // =========================================================================
     let body: unknown;
     try {
       body = await context.request.json();
@@ -150,7 +198,9 @@ export const POST: APIRoute = async (context) => {
       });
     }
 
-    // Step 2: Validate body
+    // =========================================================================
+    // Step 5: Validate Request Body
+    // =========================================================================
     const validation = createPromotionTemplateSchema.safeParse(body);
     if (!validation.success) {
       const error: ApiError = {
@@ -163,32 +213,39 @@ export const POST: APIRoute = async (context) => {
 
     const command = validation.data;
 
-    // Development default created_by (sample user)
-    const createdBy = "550e8400-e29b-41d4-a716-446655440100";
-
-    // Step 3: Execute service
+    // =========================================================================
+    // Step 6: Execute Service Method
+    // =========================================================================
     const service = new PromotionTemplateService(context.locals.supabase);
     try {
-      // import type for command matching CreatePromotionTemplateCommand
-      // avoid `any` by asserting to the expected type from ../types
       const created = await service.createPromotionTemplate(
         command as unknown as import("../../../types").CreatePromotionTemplateCommand,
-        createdBy
+        user.id
       );
+
+      // =========================================================================
+      // Step 7: Return Success Response
+      // =========================================================================
       return new Response(JSON.stringify(created), { status: 201, headers: { "Content-Type": "application/json" } });
     } catch (err) {
+      // =========================================================================
+      // Error Handling: Service Layer Errors
+      // =========================================================================
       const maybeErr = err as unknown as { code?: string; message?: string };
+
+      // Handle conflict errors (template already exists)
       if (maybeErr.code === "conflict") {
         const apiError: ApiError = { error: "conflict", message: maybeErr.message || "Conflict" };
         return new Response(JSON.stringify(apiError), { status: 409, headers: { "Content-Type": "application/json" } });
       }
-      // Unexpected error from service - log and return 500
+
+      // Unexpected service errors: log and return 500
       await logError(context.locals.supabase, {
         route: "/api/promotion-templates",
         error_code: "create_failed",
         message: maybeErr.message ?? String(err),
         payload: { body: command },
-        requester_id: createdBy,
+        requester_id: user.id,
       });
       const apiError: ApiError = {
         error: "internal_error",
