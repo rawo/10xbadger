@@ -3,14 +3,13 @@
  *
  * Handles email/password authentication via Supabase Auth.
  * Accepts form submission (POST with form data), validates credentials,
- * creates/updates user record, and redirects to intended destination.
+ * updates user record, and redirects to intended destination.
  *
  * Flow:
  * 1. Parse and validate form data
  * 2. Authenticate with Supabase (signInWithPassword)
- * 3. Create or update user record in database
- * 4. Update last_seen_at timestamp
- * 5. Redirect to intended destination or dashboard
+ * 3. Update last_seen_at timestamp
+ * 4. Redirect to intended destination or dashboard
  */
 
 export const prerender = false;
@@ -35,7 +34,7 @@ export async function POST(context: APIContext): Promise<Response> {
 
     if (!validation.success) {
       // Validation failed - redirect back to login with error
-      const errorMessage = validation.error.errors[0]?.message || "Invalid input";
+      const errorMessage = validation.error?.errors?.[0]?.message || "Invalid input";
       return context.redirect(`/login?error=validation_error&message=${encodeURIComponent(errorMessage)}`);
     }
 
@@ -55,8 +54,8 @@ export async function POST(context: APIContext): Promise<Response> {
     // Note: We allow login even if email is not verified (as per requirements)
     // The UI will show a verification banner if needed
 
-    // Fetch user record using SERVICE ROLE to bypass RLS
-    // This is necessary because RLS policies may block reading the user record
+    // Update user's last_seen_at timestamp using SERVICE ROLE to bypass RLS
+    // This is necessary because RLS policies may block updating the user record
     // during login flow (circular dependency with is_admin() function)
     const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceRoleKey) {
@@ -68,7 +67,7 @@ export async function POST(context: APIContext): Promise<Response> {
     const { createClient } = await import("@supabase/supabase-js");
     const adminClient = createClient(import.meta.env.SUPABASE_URL, serviceRoleKey);
 
-    // Fetch user record (bypassing RLS)
+    // Fetch user record to verify it exists (bypassing RLS)
     const { data: userData, error: userError } = await adminClient
       .from("users")
       .select("*")
@@ -79,43 +78,25 @@ export async function POST(context: APIContext): Promise<Response> {
     const userNotFound = userError?.code === "PGRST116" || (!userData && !userError);
 
     if (userNotFound) {
-      // User not in database yet, create record
-      // Check if this should be an admin user
-      const isAdmin = data.user.email === "admin@badger.com";
+      // User not in database - this shouldn't happen if registration flow is correct
+      // Block login as the user record should have been created during registration
+      logAuthFailure(data.user.id, "User record not found during login", { userId: data.user.id });
 
-      const { data: newUserData, error: insertError } = await adminClient
-        .from("users")
-        .insert({
-          id: data.user.id,
-          email: data.user.email || "",
-          display_name: (data.user.email || "").split("@")[0],
-          is_admin: isAdmin,
-          last_seen_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+      // Sign out the user since login cannot proceed without a user record
+      await supabase.auth.signOut();
 
-      if (insertError) {
-        // Failed to create user record - this is a critical error
-        // Block login as per requirements (return 500)
-        logAuthFailure(data.user.id, "User record creation failed", { error: insertError });
+      return context.redirect("/login?error=user_not_found&message=Please%20register%20first");
+    }
 
-        // Sign out the user since we can't complete the login
-        await supabase.auth.signOut();
-
-        return context.redirect("/login?error=server_error");
-      }
-
-      userData = newUserData;
-    } else if (userData) {
-      // User exists - update last_seen_at
-      await adminClient.from("users").update({ last_seen_at: new Date().toISOString() }).eq("id", data.user.id);
-    } else if (userError) {
+    if (userError) {
       // Unexpected error fetching user
       logAuthFailure(data.user.id, "Failed to fetch user record", { error: userError });
       await supabase.auth.signOut();
       return context.redirect("/login?error=server_error");
     }
+
+    // Update last_seen_at timestamp
+    await adminClient.from("users").update({ last_seen_at: new Date().toISOString() }).eq("id", data.user.id);
 
     logAuthSuccess(data.user.id, "email_password", { action: "login" });
 

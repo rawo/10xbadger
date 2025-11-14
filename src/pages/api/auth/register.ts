@@ -7,9 +7,10 @@
  * Flow:
  * 1. Validate form data
  * 2. Register with Supabase Auth (signUp)
- * 3. Set is_admin if email is admin@badger.com
- * 4. Send verification email
- * 5. Redirect to verification page
+ * 3. Create user record in database
+ * 4. Set is_admin if email is admin@badger.com
+ * 5. Send verification email
+ * 6. Redirect to verification page
  */
 
 export const prerender = false;
@@ -32,7 +33,7 @@ export async function POST(context: APIContext): Promise<Response> {
     const validation = RegisterSchema.safeParse({ email, password });
 
     if (!validation.success) {
-      const errorMessage = validation.error.errors[0]?.message || "Invalid input";
+      const errorMessage = validation.error?.errors?.[0]?.message || "Invalid input";
       return context.redirect(`/register?error=validation_error&message=${encodeURIComponent(errorMessage)}`);
     }
 
@@ -75,9 +76,43 @@ export async function POST(context: APIContext): Promise<Response> {
       return context.redirect("/register?error=registration_failed");
     }
 
-    // Note: We don't create the user record here
-    // It will be created automatically on first login via the login endpoint
-    // This avoids RLS policy conflicts during registration
+    // Create user record in database using SERVICE ROLE to bypass RLS
+    // This is necessary because RLS policies may block creating the user record
+    // during registration flow (circular dependency with is_admin() function)
+    const serviceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey) {
+      // Sign out the user since we can't complete the registration
+      await supabase.auth.signOut();
+      return context.redirect("/register?error=server_error");
+    }
+
+    // Create admin client with service role key (bypasses RLS)
+    const { createClient } = await import("@supabase/supabase-js");
+    const adminClient = createClient(import.meta.env.SUPABASE_URL, serviceRoleKey);
+
+    // Create user record in database
+    const { error: insertError } = await adminClient
+      .from("users")
+      .insert({
+        id: data.user.id,
+        email: data.user.email || "",
+        display_name: (data.user.email || "").split("@")[0],
+        is_admin: isAdmin,
+        last_seen_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      // Failed to create user record - this is a critical error
+      // Block registration as per requirements (return 500)
+      logAuthFailure(data.user.id, "User record creation failed during registration", { error: insertError });
+
+      // Sign out the user since we can't complete the registration
+      await supabase.auth.signOut();
+
+      return context.redirect("/register?error=server_error");
+    }
 
     logAuthSuccess(data.user.id, "email_password", { action: "register" });
 
